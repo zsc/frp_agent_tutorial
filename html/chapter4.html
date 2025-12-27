@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-4prompt-management">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</h1>
+<h2 id="1">1. 开篇段落</h2>
+<p>在传统的脚本式 LLM 开发中，Prompt 往往是一个静态的字符串模版（String Template），开发者通过简单的变量替换（如 f-string）来生成输入。这种方式在一次性脚本中尚可，但在<strong>长生命周期的实时（Real-time）Agent</strong> 系统中，它面临着巨大的挑战：</p>
+<ol>
+<li><strong>时空感知</strong>：世界在流逝，用户的位置在移动，Agent 需要“知道”当下是几点、在哪里，而不需要用户每次都提醒。</li>
+<li><strong>上下文爆炸</strong>：随着对话进行，History 无限增长，静态模版无法处理动态压缩和遗忘。</li>
+<li><strong>竞态与一致性</strong>：后台的总结任务、工具执行结果、新的用户输入同时到来，手动维护 Prompt 的状态机极其痛苦。</li>
+<li><strong>性能与成本</strong>：不加区分地重组 Prompt 会导致 KV Cache 失效，增加延迟和 Token 消耗。</li>
+</ol>
+<p>在 FRP 范式下，<strong>Prompt 不是一个字符串，而是一个随时间变化的信号（Signal）</strong>。它是当前“世界状态（Context）”、“对话历史（History）”与“系统指令（System）”的<strong>纯函数映射</strong>。本章将指导你构建一个<strong>反应式 Prompt 管道（Reactive Prompt Pipeline）</strong>，实现环境感知的自动播报、长上下文的流式压缩以及基于 Token 预算的动态裁剪。</p>
+<hr />
+<h2 id="2">2. 文字论述</h2>
+<h3 id="21-string-signalprompt">2.1 范式转换：从 String 到 <code>Signal&lt;Prompt&gt;</code></h3>
+<p>在 FRP 中，Prompt 是系统的<strong>派生状态（Derived State）</strong>。我们不再编写“构建 Prompt”的命令式代码，而是定义依赖关系。</p>
+<p>$$ Prompt_t = \text{Compose}(\text{System}, \text{Env}_t, \text{Mem}_t, \text{Input}_t) $$</p>
+<p>当依赖的任何上游信号发生变化时，Prompt Signal 会自动重新计算。</p>
+<div class="codehilite"><pre><span></span><code><span class="nl">Stream</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span><span class="w"> </span><span class="nf">Tick</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="n">min</span><span class="p">)</span><span class="w"> </span><span class="o">----+</span>
+<span class="w">                             </span><span class="o">|</span>
+<span class="nl">Stream</span><span class="p">:</span><span class="w"> </span><span class="n">GPS</span><span class="w"> </span><span class="n">Location</span><span class="w"> </span><span class="o">--------+--&gt;</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="n">Environment</span><span class="w"> </span><span class="n">Signal</span><span class="w"> </span><span class="p">]</span>
+<span class="w">                             </span><span class="o">|</span><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;10:00&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">loc</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;Home&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="nl">Stream</span><span class="p">:</span><span class="w"> </span><span class="n">Battery</span><span class="w"> </span><span class="n">Level</span><span class="w"> </span><span class="o">-------+</span><span class="w">               </span><span class="o">|</span>
+<span class="w">                                             </span><span class="n">v</span>
+<span class="nl">Stream</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">Inputs</span><span class="w">  </span><span class="o">-----&gt;</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="n">History</span><span class="w"> </span><span class="n">Accumulator</span><span class="w"> </span><span class="p">]</span>
+<span class="w">                                             </span><span class="o">|</span>
+<span class="w">                                             </span><span class="n">v</span>
+<span class="w">                         </span><span class="o">+---------------------------------------+</span>
+<span class="w">                         </span><span class="o">|</span><span class="w">      </span><span class="n">combineLatest</span><span class="w"> </span><span class="n">Operator</span><span class="w">           </span><span class="o">|</span>
+<span class="w">                         </span><span class="o">|</span><span class="w">  </span><span class="p">(</span><span class="n">System</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Env</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">History</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Input</span><span class="p">)</span><span class="w">     </span><span class="o">|</span>
+<span class="w">                         </span><span class="o">+-------------------+-------------------+</span>
+<span class="w">                                             </span><span class="o">|</span>
+<span class="w">                                             </span><span class="n">v</span>
+<span class="w">                                  </span><span class="p">[</span><span class="w"> </span><span class="n">Prompt</span><span class="w"> </span><span class="n">Signal</span><span class="w"> </span><span class="p">]</span>
+<span class="w">                         </span><span class="p">(</span><span class="n">Ready</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Token</span><span class="w"> </span><span class="n">Counter</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="22-agent">2.2 “环境状态播报”策略：让 Agent 拥有感官</h3>
+<p>为了 Agent 显得智能，它需要像生物一样感知环境。这种感知必须是<strong>非侵入式</strong>的。</p>
+<h4 id="221">2.2.1 信号源与语义映射</h4>
+<p>原始传感器数据往往过于嘈杂，不适合直接喂给 LLM。我们需要在 FRP 管道中插入<strong>语义转换层</strong>。</p>
+<ul>
+<li><strong>时间</strong>：<code>Timestamp</code> -&gt; <code>Formatting</code> ("2023年10月27日 星期五 下午")</li>
+<li><strong>位置</strong>：<code>Lat/Long</code> -&gt; <code>Reverse Geocoding</code> ("北京市海淀区") -&gt; <code>Semantic Label</code> ("公司" / "家里" / "移动中")</li>
+<li><strong>设备</strong>：<code>Battery</code> -&gt; <code>Status</code> ("电量充足" / "低电量模式")</li>
+</ul>
+<h4 id="222">2.2.2 变更检测与节流</h4>
+<p>如果 GPS 坐标每秒微变，Prompt 信号也会每秒更新，这可能引发不必要的计算。
+我们需要使用 <code>distinctUntilChanged</code> 算子，并提供自定义的<strong>比较函数（Comparator）</strong>。</p>
+<blockquote>
+<p><strong>Rule of Thumb (语义边界原则)</strong>：
+只有当环境变化跨越了“语义边界”时，才更新 Prompt 信号。</p>
+<ul>
+<li><strong>时间</strong>：从“上午”变“下午”，或每隔 15 分钟。</li>
+<li><strong>位置</strong>：从“家”变“地铁站”（而非坐标变动 10 米）。</li>
+<li><strong>网络</strong>：从 WiFi 变 4G。</li>
+</ul>
+</blockquote>
+<h3 id="23-prompt-patch">2.3 时间变化与 Prompt Patch</h3>
+<p>在 FRP 中，时间是一个特殊的输入源（Tick Stream）。但这里有一个棘手的问题：<strong>时间流逝是否应该触发 LLM 说话？</strong></p>
+<p>通常我们采用 <code>withLatestFrom</code> 模式，而不是 <code>combineLatest</code> 模式来处理时间：</p>
+<ol>
+<li>
+<p><strong>被动感知（Passive Awareness）</strong>：</p>
+<ul>
+<li>主触发器：用户输入（User Input Stream）。</li>
+<li>操作：当用户说话时，<code>withLatestFrom(TimeSignal)</code> 抓取当前时间。</li>
+<li>效果：Agent 只有在回答时才知道时间，平时不消耗推理资源。</li>
+</ul>
+</li>
+<li>
+<p><strong>主动触发（Active Triggering）</strong>：</p>
+<ul>
+<li>主触发器：Time Signal。</li>
+<li>逻辑：<code>TimeSignal.filter(t =&gt; is_alarm_time(t))</code>。</li>
+<li>效果：只有到了特定时刻（如闹钟、日程提醒），时间流逝才会导致 Agent 主动发言（详见 Chapter 10）。</li>
+</ul>
+</li>
+</ol>
+<h3 id="24-prompt-kv-cache">2.4 Prompt 模板分层：KV Cache 化的关键</h3>
+<p>LLM 的推理是基于 Transformer 的，使用了 KV Cache（键值缓存）。如果 Prompt 的前缀（Prefix）保持不变，计算量可以大幅减少。因此，Prompt 的结构设计必须符合<strong>变化频率从低到高</strong>的物理规律。</p>
+<div class="codehilite"><pre><span></span><code>[ Layer 1: Static System ]  &lt;-- 变化率: 0 (Hit Rate: 100%)
+&quot;你是一个且有爱心的助手...&quot;
+&quot;安全准则...&quot;
+
+[ Layer 2: Slow Context ]   &lt;-- 变化率: 低 (Hit Rate: ~80%)
+&quot;用户画像: 程序员, 喜欢科幻...&quot;
+&quot;长期记忆摘要...&quot;
+
+[ Layer 3: Dynamic Env ]    &lt;-- 变化率: 中 (Hit Rate: ~40%)
+&quot;当前时间: 14:30&quot;
+&quot;当前位置: 办公室&quot;
+&quot;后台任务状态: 搜索中...&quot;
+
+[ Layer 4: Conversation ]   &lt;-- 变化率: 高 (Hit Rate: ~10% via Rolling)
+User: Hi
+AI: Hello
+User: ...
+
+[ Layer 5: Ephemeral ]      &lt;-- 变化率: 极高 (Hit Rate: 0%)
+(思维链草稿, 错误回退提示)
+</code></pre></div>
+
+<p><strong>实现技巧</strong>：在 FRP 代码中，我们将 Prompt 定义为一个 <code>List&lt;Block&gt;</code>。每次更新时，只重新渲染变化的 Block，并在最终合并成 String 之前，保留 Block 的结构以便于 Token 估算。</p>
+<h3 id="25-dual-stream">2.5 长对话压缩：双流模型（Dual-Stream）</h3>
+<p>为了解决 Context Window 限制，我们需要一个“后台清洁工”。在 FRP 中，我们可以并行处理对话流。</p>
+<ol>
+<li><strong>Main Stream</strong>：处理即时对话，包含最近 N 条消息（Sliding Window）。</li>
+<li><strong>Summary Stream</strong>：监听 History 的变化。<ul>
+<li>当 <code>History.length &gt; Threshold</code> 时，触发<strong>副作用（Effect）</strong>。</li>
+<li>调用 LLM 将最旧的 M 条消息压缩为一段 Summary。</li>
+<li><strong>关键点</strong>：这个过程是异步的，不阻塞用户当前的对话。</li>
+<li>完成后，发射 <code>UpdateHistoryEvent</code>，将旧消息替换为 Summary Block。</li>
+</ul>
+</li>
+</ol>
+<h3 id="26">2.6 注入攻击防护与结构化隔离</h3>
+<p>Prompt Signal 是由可信源（System）和不可信源（User/Web）混合而成的。在拼接前，必须经过 <code>Sanitize Operator</code>。</p>
+<ul>
+<li><strong>隔离策略</strong>：永远不要直接拼接。使用 XML 标签或特殊 Token 形成隔断。</li>
+<li><strong>转义</strong>：如果用户输入中包含 <code>&lt;/user_input&gt;</code> 等试图闭合标签的字符，必须转义。</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="w"> </span><span class="n">Input</span><span class="w"> </span><span class="n">Stream</span><span class="w"> </span><span class="o">---&gt;</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="n">Sanitize</span><span class="w"> </span><span class="n">Operator</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">---&gt;</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="n">Wrapper</span><span class="w"> </span><span class="n">Operator</span><span class="w"> </span><span class="p">]</span>
+<span class="s">&quot;Ignore instructions&quot;</span><span class="w">      </span><span class="p">(</span><span class="n">No</span><span class="o">-</span><span class="n">op</span><span class="p">)</span><span class="w">                </span><span class="o">&lt;</span><span class="n">user_msg</span><span class="o">&gt;</span>
+<span class="w">                                                    </span><span class="n">Ignore</span><span class="w"> </span><span class="n">instructions</span>
+<span class="w">                                                  </span><span class="o">&lt;/</span><span class="n">user_msg</span><span class="o">&gt;</span>
+</code></pre></div>
+
+<h3 id="27-token">2.7 Token 预算与动态裁剪</h3>
+<p>在移动端或高并发场景下，Token 预算是硬约束。FRP 允许我们定义动态的<strong>裁剪策略（Trimming Strategy）</strong>。</p>
+<p>我们可以定义一个 <code>BudgetSignal</code>（例如：剩余可用 Token 数）。
+Prompt Signal 在生成最终文本前，会经过一个 <code>FitToBudget</code> 算子：</p>
+<ol>
+<li>计算当前总 Token。</li>
+<li>如果超标，根据<strong>优先级（Priority）</strong>丢弃 Block。<ul>
+<li>Priority 0 (Low): 工具调用的冗长 JSON 返回值（替换为结果摘要）。</li>
+<li>Priority 1 (Mid): 较早的 RAG 检索片段。</li>
+<li>Priority 2 (High): 用户的上一句话。</li>
+<li>Priority 3 (Critical): System Prompt。</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>Prompt 即 Signal</strong>：放弃字符串拼接，使用 <code>combineLatest</code> 组合多源信息（时间、位置、记忆、输入）。</li>
+<li><strong>分层与缓存</strong>：遵循“静态在前，动态在后”的物理布局，最大化利用 LLM 的 Prefix Caching，降低首字延迟。</li>
+<li><strong>环境去噪</strong>：使用 <code>distinctUntilChanged</code> 和语义映射，防止物理世界的微小波动造成 Prompt 的剧烈抖动。</li>
+<li><strong>异步压缩</strong>：利用 FRP 的并发能力，在后台流式地压缩历史记录，实现“无限对话”的幻觉。</li>
+<li><strong>安全与预算</strong>：将安全清洗和预算裁剪作为 Prompt 管道中的标准算子（Operators），确保每次发往 LLM 的请求都是合规且不超支的。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="50">基础题 (50%)</h3>
+<p><strong>Q1. 信号组合的基础</strong>
+假设你有两个信号流：<code>UserInputStream</code>（用户发送消息时触发）和 <code>TimeStream</code>（每分钟触发一次）。
+你的目标是构建一个 <code>PromptStream</code>。
+如果你直接使用 <code>combineLatest([UserInputStream, TimeStream])</code>，会发生什么问题？当用户不说话，只有时间流逝时，Prompt 会怎样？这是否是我们想要的？请提出改进的算子组合。</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>问题</strong>：<code>combineLatest</code> 会在<em>任一</em>输入流更新时发射新值。如果 <code>TimeStream</code> 每分钟更新，<code>PromptStream</code> 也会每分钟发射一次新的 Prompt。这可能导致 Agent 在用户没说话时，突然因为 Prompt 变了而重新触发推理（如果下游没有防抖逻辑），或者产生大量的无用日志。</li>
+<li><strong>期望行为</strong>：通常我们只希望在<strong>用户说话时</strong>，获取<strong>最新的时间</strong>注入 Prompt。</li>
+<li><strong>FRP 解法</strong>：使用 <code>UserInputStream.withLatestFrom(TimeStream)</code>。<ul>
+<li>主驱动是用户输入。</li>
+<li>时间只是作为附加数据被“抓取”过来。</li>
+<li>这样只有用户说话时，Prompt 才会更新。</li>
+</ul>
+</li>
+</ul>
+</details>
+<p><strong>Q2. 简单的 Token 估算器</strong>
+Prompt 分为三部分：System (固定 100 tokens), History (动态), User (动态)。
+设计一个 <code>map</code> 函数逻辑，确保总 Prompt 不超过 1000 tokens。如果超了，优先裁剪 History 的头部。</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>逻辑伪代码</strong>：</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">fit_budget</span><span class="p">(</span><span class="n">system</span><span class="p">,</span> <span class="n">history_list</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
+    <span class="n">budget</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">current_tokens</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">system</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span>
+    <span class="n">available_for_history</span> <span class="o">=</span> <span class="n">budget</span> <span class="o">-</span> <span class="n">current_tokens</span>
+
+    <span class="k">if</span> <span class="n">available_for_history</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Error</span><span class="p">(</span><span class="s2">&quot;User input too long&quot;</span><span class="p">)</span>
+
+    <span class="n">trimmed_history</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">history_list</span><span class="p">):</span> <span class="c1"># 从最新的开始保留</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">available_for_history</span><span class="p">:</span>
+            <span class="n">trimmed_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+            <span class="n">available_for_history</span> <span class="o">-=</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">break</span> <span class="c1"># 预算耗尽</span>
+
+    <span class="k">return</span> <span class="n">construct_prompt</span><span class="p">(</span><span class="n">system</span><span class="p">,</span> <span class="n">trimmed_history</span><span class="p">,</span> <span class="n">user_input</span><span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li><strong>FRP 算子</strong>：这个逻辑会被封装在一个 <code>map</code> 或 <code>transform</code> 算子中，串联在 Prompt Signal 的末端。</li>
+</ul>
+</details>
+<p><strong>Q3. 环境变化的去噪</strong>
+你的 Agent 有一个 <code>BatteryLevelStream</code>，每秒通过 API 返回电量百分比（如 99.1%, 99.0%, 98.9%...）。
+你希望只有在电量发生“显著变化”（每下降 20%）或者“状态改变”（充电中/未充电）时才更新 Prompt。请描述过滤器逻辑。</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>逻辑</strong>：需要维护一个“上一次广播的状态”作为闭包或累加器。</li>
+<li><strong>算子</strong>：<code>scan</code> (用于状态维持) + <code>distinctUntilChanged</code>。</li>
+<li><strong>实现</strong>：<ol>
+<li>将原始流映射为语义对象：<code>{ level_tier: floor(level / 20), is_charging: status }</code>。例如 99% -&gt; tier 4, 81% -&gt; tier 4, 79% -&gt; tier 3。</li>
+<li>应用 <code>distinctUntilChanged</code>。</li>
+<li>只有当 tier 改变（如从 4 变 3）或充电状态改变时，信号才会向下游传播。</li>
+</ol>
+</li>
+</ul>
+</details>
+<h3 id="50_1">挑战题 (50%)</h3>
+<p><strong>Q4. 上下文快照与“幽灵读取” (Snapshot Latching)</strong>
+场景：用户问“现在几点了？”（T1时刻）。
+FRP 管道构建 Prompt 需要 50ms。LLM 推理需要 2秒。
+在 T1+100ms 时，<code>TimeStream</code> 更新了（跳了一分钟）。
+在 T1+1s 时，用户位置更新了（从家里变到了路上）。
+如果你的 Agent 正在流式输出回答，中间 Prompt Signal 变了，会发生什么？如何在 FRP 中确保 LLM 处理的是 T1 时刻的“快照”？</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>风险</strong>：如果在生成过程中读取了新的 Signal，可能会导致生成的回答前后不一致（前半句基于旧时间，后半句基于新时间，如果代码逻辑是动态拉取的话），或者触发不必要的重新推理。</li>
+<li><strong>解法</strong>：<strong>采样与锁定（Sample &amp; Hold / Latch）</strong>。<ul>
+<li>当推理动作（Effect）被触发时，应该<strong>捕获（Take）</strong> 当前所有依赖信号的瞬时值，构建一个不可变的 <code>GenerationContext</code> 对象。</li>
+<li>这个对象传给 LLM 函数。</li>
+<li>在 LLM 完成之前，即使上游 Signal 变了，正在运行的 Effect 也不受影响。</li>
+<li>UI 层可以选择是否显示“环境已更新”的提示，但不能打断当前的推理流（除非有显式的 Cancellation 逻辑）。</li>
+</ul>
+</li>
+</ul>
+</details>
+<p><strong>Q5. 异步摘要的一致性难题 (Advanced)</strong>
+你实现了一个后台摘要流。
+状态：History = [A, B, C, D, E]。
+触发摘要：对 [A, B, C] 进行摘要 -&gt; Summary(ABC)。
+<strong>问题</strong>：摘要是个耗时操作。在摘要生成期间，用户发了消息 F。
+当前 History 变成了 [A, B, C, D, E, F]。
+摘要完成，得到了 <code>Sum_ABC</code>。
+如果在摘要回调中简单地执行 <code>History = [Sum_ABC] + [D, E]</code>，而忽略了 F，就会丢失消息 F。
+请设计一个基于 Version Vector 或 Operational Transformation (OT) 思想的 FRP 状态更新机制。</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>核心思想</strong>：状态更新必须是原性的，且基于“变更意图”而非“覆盖”。</li>
+<li><strong>FRP 架构</strong>：<ol>
+<li><strong>State</strong>：<code>{ messages: [...], base_version: 5 }</code> (假设 E 是第 5 条)。</li>
+<li><strong>User Action</strong>：<code>AddMessage(F)</code> -&gt; reducer -&gt; <code>messages: [..., F], base_version: 6</code>。</li>
+<li><strong>Summary Action</strong>：<ul>
+<li>Start: 记录 <code>target_range: 0..2</code> (A,B,C), <code>snapshot_version: 5</code>.</li>
+<li>Complete: 发射 <code>ApplySummaryEvent(summary, target_range, snapshot_version)</code>.</li>
+</ul>
+</li>
+<li><strong>Reducer 处理 ApplySummaryEvent</strong>：<ul>
+<li>检查 <code>target_range</code> 的消息是否还在（或者是否已经被别的摘要合并了）。</li>
+<li>将 <code>messages</code> 中对应 range 的部分替换为 summary。</li>
+<li><strong>关键</strong>：由于 F 是追加在尾部的，它不在 <code>target_range</code> 内，因此替换操作是安全的：<code>[Sum_ABC, D, E, F]</code>。</li>
+<li>如果发生了冲突（比如另一条流删除了 B），则放弃本次摘要或重新计算。</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</details>
+<p><strong>Q6. Prompt A/B 测试的动态路由</strong>
+你需要同时测两个不同版本的 System Prompt（版本 A 严肃，版本 B 幽默）。
+要求：</p>
+<ol>
+<li>同一个会话（Session）必须保持版本一致。</li>
+<li>可以在运行时动态调整 A/B 的流量比例（例如从 50/50 调到 80/20）。</li>
+<li>这是一个 Configuration Signal。
+请在 FRP 管道中设计这个路由逻辑。</li>
+</ol>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>设计</strong>：<ol>
+<li><strong>Config Signal</strong>：<code>{ version_a_ratio: 0.8 }</code>。</li>
+<li><strong>Session Stream</strong>：新会话开始时触发。</li>
+<li><strong>Assignment Logic</strong>：<ul>
+<li>当 <code>SessionStart</code> 事件发生时，<code>withLatestFrom(ConfigSignal)</code>。</li>
+<li>根据随机数和 ratio 决定该 Session 的 <code>prompt_variant</code>。</li>
+<li><strong>Sticky Session</strong>：将这个 decision 存入 <code>SessionState</code>。</li>
+</ul>
+</li>
+<li><strong>Prompt Construction</strong>：<ul>
+<li><code>combineLatest(SessionState, ...)</code></li>
+<li><code>map</code> 函数中：<code>if state.variant == 'A' then use TemplateA else use TemplateB</code>.</li>
+<li><strong>关键点</strong>：配置的变更不会影响<em>正在进行</em>的会话（保持一致性），只会影响<em>新</em>会话（因为路由决策是在 SessionStart 时做的 snapshot）。</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="51-the-ticking-bomb">5.1 The "Ticking Bomb" (秒针炸弹)</h3>
+<ul>
+<li><strong>现象</strong>：开发者为了精确，将时间格式化为 <code>"14:30:01"</code> 放入 Prompt。</li>
+<li><strong>后果</strong>：<ul>
+<li>每一秒钟，Time Signal 都会变化。</li>
+<li>每一秒钟，Prompt Signal 都会更新。</li>
+<li>如果下游 UI 绑定了 Prompt Signal，UI 会疯狂闪烁。</li>
+<li>如果使用了 Debug 日志，磁盘会被写满。</li>
+<li><strong>最严重</strong>：如果 Agent 的触发逻辑写成了 <code>combineLatest</code> 且没有防抖，Agent 可能会每秒钟都试图对这句话进行重新推理（虽然大部分 LLM API 还没返回上一句）。</li>
+</ul>
+</li>
+<li><strong>修正</strong>：只精确到分钟，或者仅在 System Prompt 中更新时间，而不触发推理流。</li>
+</ul>
+<h3 id="52-cache-thrashing">5.2 缓存抖动 (Cache Thrashing)</h3>
+<ul>
+<li><strong>现象</strong>：为了方便，每次构建 Prompt 时，随机打乱了例（Few-shot examples）的顺序，或者把 System Prompt 放在了 User Input 之后。</li>
+<li><strong>后果</strong>：LLM 无法利用 Prefix Caching。每次请求都需要重新处理所有 Token，导致首字延迟（TTFT）增加 2-5 倍，成本飙升。</li>
+<li><strong>修正</strong>：保持 Prompt 前缀的<strong>字节级</strong>一致性。静态内容永远放在最前。</li>
+</ul>
+<h3 id="53-the-ghost-context">5.3 幽灵上下文 (The "Ghost" Context)</h3>
+<ul>
+<li><strong>现象</strong>：用户问“今天天气如何？” Agent 回答了。然后用户带着设备移动到了另一个城市。位置信号更新了。用户问“附近的餐馆？”</li>
+<li><strong>Bug</strong>：Agent 仍然推荐上一个城市的餐馆。</li>
+<li><strong>原因</strong>：Prompt Signal 虽然更新了，但 Agent 的 <code>SessionState</code> 或 <code>Memory</code> 中可能缓存了上一轮的思维链（Chain of Thought），其中包含了旧地点的“短期记忆”。</li>
+<li><strong>修正</strong>：当检测到关键环境变化（如城市变更）时，除了更新 Prompt，还应该发射一个 <code>ClearShortTermMemory</code> 事件，清除思维链中的陈旧信息。</li>
+</ul>
+<h3 id="54-prompt-f-string">5.4 所有的 Prompt 都是 f-string</h3>
+<ul>
+<li><strong>现象</strong>：代码中充斥着 <code>prompt = f"..."</code>。</li>
+<li><strong>后果</strong>：难以维护，难以测试，无法统一处理安全性（Sanitization）和预算（Budgeting）。</li>
+<li><strong>修正</strong>：建立 <code>PromptBuilder</code> 对象或函数管道，将模版、数据、配置分离。</li>
+</ul>
+<h3 id="55-tokenizer">5.5 忽略了 Tokenizer 的差异</h3>
+<ul>
+<li><strong>现象</strong>：使用 <code>string.length</code> 或简单的 <code>split(' ')</code> 来估算 Token 预算。</li>
+<li><strong>后果</strong>：对于中文或代码内容，估算误差极大。导致发送给 API 时超过上下文窗口限制（Context Window Exceeded Error）。</li>
+<li><strong>修正</strong>：在 FRP 管道中集成真实的 Tokenizer（如 <code>tiktoken</code> 或 <code>transformers</code>）。为了性能，可以建立一个 <code>LengthSignal</code>，只有当文本变化时才重新计算 Token 数。</li>
+</ul>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter3.html" class="nav-link prev">← Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</a><a href="chapter5.html" class="nav-link next">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入 →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

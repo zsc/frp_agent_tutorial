@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-11race-condition">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</h1>
+<h2 id="1-agent">1. 开篇：为什么你的 Agent 会变得“精神分裂”？</h2>
+<p>在构建实时 LLM Agent 的过程中，最令人沮丧的时刻莫过于 Agent 表现得像一个“精神分裂”的实体：它前言不搭后语，对用户的打断置若罔闻，或者在对话中突然插入一段来自几秒前的“幽灵”回复。这种诡异行为的根源，几乎总是指向同一个恶魔：<strong>Race Condition（竞态条件）</strong>。</p>
+<p>我们习惯于线性思考：用户提问，系统思考，系统回答。但在一个由用户、模型、工具、网络和 UI 组成的复杂系统中，<strong>并发才是常态，线性才是幻觉</strong>。事件从四面八方涌来，以不可预测的顺序和延迟到达</p>
+<ul>
+<li>用户在 Agent 生成到一半时，改了主意，输入了新的指令。</li>
+<li>Agent 为了加速，并行调用了三个工具，但最慢的那个工具返回的结果却是最重要的。</li>
+<li>一个投机性执行（Speculative Execution）的分支被证明是错误的，需要被无痕地撤销，但它的部分结果已经渲染到了 UI 上。</li>
+</ul>
+<p>如果不对这些并发冲突进行精细管理，系统的状态就会陷入混乱，一致性被破坏。本章的目标，就是利用 FRP 提供的强大时序控制能力，构建一套坚固的“真相维护”机制。我们将学习如何驯服时间，确保无论外部世界多么混乱，我们的 Agent 始终能保持逻辑上的清醒和一致，成为一个可靠、可预测的智能伙伴。</p>
+<hr />
+<h2 id="2">2. 核心论述</h2>
+<h3 id="21">2.1 竞态来自哪里？（敌人的解剖图）</h3>
+<p>在实时 Agent 系统中，竞态主要有三大来源：</p>
+<ol>
+<li>
+<p><strong>输入侧竞态（Input Races）</strong>：
+    用户的思维和动作远快于模型的生成速度。当用户连续快速输入、编辑或撤回指令时，就形成了一系列相互竞争的“意图”。</p>
+<ul>
+<li><strong>例子</strong>：用户输入“帮我订一张去上海的机票”，随即意识到忘了说日期，立刻补充“...明天早上的”。如果系统对这两个输入的处理是并行且无序的，它可能会先处理“明天早上的”，发现上下文不全而报错，然后才处理“订机票”，导致一次失败的交互。</li>
+</ul>
+</li>
+<li>
+<p><strong>IO 侧竞态（IO/Effect Races）</strong>：
+    这是最常见的竞态来源。Agent 的大部分工作都涉及异步 I/O 操作，如调用 LLM、查询数据库、访问外部 API。这些操作的延迟是不可预测的。</p>
+<ul>
+<li><strong>例子</strong>：一个 RAG 流程，Agent 需要先调用 <code>Search(query)</code>，再调用 <code>Summarize(results)</code>。但如果 <code>Search</code> 接口网络抖动，延迟了 3 秒，而此时用户触发了另一个无关的工具调用，其结果先于 <code>Search</code> 返回。处理不当的系统可能会错误地将这个无关的结果喂给 <code>Summarize</code>。</li>
+</ul>
+</li>
+<li>
+<p><strong>UI/渲染竞态（Presentation Races）</strong>：
+    即使后端状态已经正确更新，前端的渲染也可能因为网络延迟、缓冲或错误的组件逻辑而出问题，导致用户看到的是过期的、不一致的信息。</p>
+<ul>
+<li><strong>例子</strong>：后端状态已从“正在生成...”切换到“已取消”，但前端的流式渲染组件还在消费 WebSocket 缓冲区里残留的 token，导致 UI 上出现“正在生成...已取消...的第一个结果是...”。</li>
+</ul>
+</li>
+</ol>
+<h4 id="ascii">ASCII 图解：复杂的多工具竞态灾难</h4>
+<div class="codehilite"><pre><span></span><code>时间轴 (t) ---&gt;
+
+用户输入流:  [ &quot;分析一下苹果公司最近的财报和新闻&quot; ]
+                  |
+Agent 计划流:     +--&gt; { planId: 1, steps: [ToolA, ToolB] }
+                  |
+并行工具调用:     +--&gt; ToolA: GetFinancials(&#39;AAPL&#39;)  ----(慢)------&gt;
+                  |
+                  +--&gt; ToolB: GetNews(&#39;Apple Inc&#39;)  --(快)--&gt; [ &quot;新闻1&quot;, &quot;新闻2&quot; ]
+                  |                                             |
+用户打断流:       ------------------ [ &quot;算了，直接告诉我股价&quot; ] ---+
+                                                                |
+Agent 计划流:                                                   +--&gt; { planId: 2, steps: [ToolC] }
+                                                                |
+工具调用:                                                       +--&gt; ToolC: GetStock(&#39;AAPL&#39;) -&gt; [ &quot;$170&quot; ]
+                                                                |                            |
+LLM 生成流:                                                     +----------------------------&gt; &quot;苹果当前股价为 $170&quot;
+                  |                                                                            |
+迟到的 ToolA:    -----------------------------------------------------&gt; [ &quot;财报数据...&quot; ] ------&gt; (???)
+                                                                                                 ^
+                                                                                                 |
+                                                                    这个被取消任务的“僵尸”结果应该去哪？
+                                                                    如果处理不当，它可能会污染 planId: 2 的上下文，
+                                                                    导致 Agent 突然开始播报财报。
+</code></pre></div>
+
+<h3 id="22-frp">2.2 FRP 的解题思路：用算子驯服时间</h3>
+<p>FRP 将时间相关的控制逻辑抽象成了声明式的算子。解决竞态的核心思想是：<strong>明确定义当新的事件到来时，如何处理正在进行的旧事件</strong>。</p>
+<h4 id="221-switchlatest-switchmapthe-mvp">2.2.1 <code>switchLatest</code> / <code>switchMap</code>：只在乎当下（The MVP）</h4>
+<p>这是处理实时交互 Agent 的<strong>核心武器</strong>，没有之一。</p>
+<ul>
+<li><strong>语义</strong>：当上游事件流（如用户输入）产生一个新事件时，它会立即<strong>取消</strong>（Unsubscribe）并丢弃由前一个事件产生的内部流（如 LLM 请求），然后订阅并切换到由新事件产生的新流。</li>
+<li><strong>场景</strong>：用户输入、搜索建议、任何“后浪推前浪”的场景。</li>
+<li><strong>效果</strong>：完美解决了用户打断和快速输入的问题，确保系统永远在处理用户最新的意图。</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>// switchLatest 行为示意图
+上游流:    --A------B----C------&gt;
+            |      |    |
+内部流:    --a1-a2-X   (A的流被B打断，取消)
+                   --b1-b2-b3-X (B的流被C打断，取消)
+                        --c1-c2-c3-c4--&gt;
+
+输出流:    --a1-a2----b1-b2-b3-c1-c2-c3-c4--&gt;
+</code></pre></div>
+
+<h4 id="222-exhaustmap">2.2.2 <code>exhaustMap</code>：正在忙，勿扰</h4>
+<ul>
+<li><strong>语义</strong>：如果当前有一个内部流正在执行，它会<strong>忽略</strong>所有新到来的上游事件，直到当前流执行完毕。</li>
+<li><strong>场景</strong>：处理关键的、不可中断的事务。例如，用户点击“下单”按钮后，在支付完成前，应忽略所有后续的点击。</li>
+</ul>
+<h4 id="223-concatmap">2.2.3 <code>concatMap</code>：排队，一个接一个</h4>
+<ul>
+<li><strong>语义</strong>：严格按照上游事件的到达顺序，一个接一个地执行部流。前一个流不完成，后一个流绝不开始。</li>
+<li><strong>场景</strong>：需要保证严格顺序的操作，如写入日志、执行一个多步骤的工具链（toolchain）、数据库迁移。</li>
+</ul>
+<h4 id="224-takeuntil">2.2.4 <code>takeUntil</code>：显式的紧急刹车</h4>
+<ul>
+<li><strong>语义</strong>：订阅一个流，直到另一个“信号”流发出事件为止。一旦信号流发出事件，主流程立即停止。</li>
+<li><strong>场景</strong>：UI 上的“停止生成”按钮、全局的超时信号、用户登出事件。</li>
+</ul>
+<h3 id="23-id">2.3 建立单一真相源：逻辑时钟与序列 ID</h3>
+<p>物理时间（Wall Clock Time）在并发和分布式系统中是不可靠的，因为它会受到服务器时钟漂移、网络延迟和客户端时钟不准的影响。为了在混乱中建立秩序，我们需要<strong>逻辑时钟</strong>。</p>
+<h4 id="rule-of-thumb-id-turn-id">Rule-of-Thumb: 为每一次交互分配一个单调递增的“轮次 ID” (Turn ID)</h4>
+<p>在 Agent 系统中，最实用的逻辑时钟是一个与用户交互轮次绑定的、单调递增的 ID。</p>
+<ol>
+<li><strong>用户发起新对话/令</strong> -&gt; 系统创建一个新的 <code>Turn</code>，分配 <code>turnId: 101</code>。</li>
+<li><strong>所有由此 <code>Turn</code> 产生的 Effect（LLM, Tool, DB）</strong> -&gt; 都必须携带 <code>turnId: 101</code> 作为元数据。</li>
+<li><strong>状态更新器（Reducer）的防御性编程</strong>：Reducer 在更新状态时，必须检查事件携带的 <code>turnId</code>。</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">agentReducer</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span><span class="w"> </span><span class="nx">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// 如果事件来自一个已经过时的轮次，直接忽略</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">turnId</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">state</span><span class="p">.</span><span class="nx">currentTurnId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">state</span><span class="p">;</span><span class="w"> </span><span class="c1">// No change</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// ... 正常处理事件 ...</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>这种简单的机制可以优雅地过滤掉绝大多数由于网络延迟导致的“僵尸”事件。</p>
+<h3 id="24-occ">2.4 事务语义与乐观并发控制 (OCC)</h3>
+<p>当多个并发操作可能修改同一份状态时（例如，两个工具同时更新用户画像），我们需要事务保证。由于 Agent 的状态更新通常很轻量，<strong>乐观并发控制（Optimistic Concurrency Control, OCC）</strong> 是一个非常适合的模式。</p>
+<p><strong>OCC 流程：</strong></p>
+<ol>
+<li><strong>读取</strong>：当一个操作开始时，它读取当前状态以及状态的 <code>version</code> 号。</li>
+<li><strong>计算</strong>：基于读取的数据计算出新状态。</li>
+<li><strong>写入</strong>：提交更新时，检查当前数据库中的 <code>version</code> 是否与第一步读取时的一致。<ul>
+<li>如果一致，说明没有冲突，更新数据并将 <code>version</code> 加一。</li>
+<li>如果不一致，说明在计算期间有其他操作修改了数据。此时写入失败，需要<strong>重试</strong>（重新读取、计算、写入）或向用户报告冲突。</li>
+</ul>
+</li>
+</ol>
+<p>在 FRP 中，这可以被建模为一个流，其中 <code>catchError</code> 负责处理版本冲突并触发重试逻辑。</p>
+<h3 id="25">2.5 幂等性：在重试与重放中幸存</h3>
+<p>网络是不可靠的，重试是必须的。但如果一个“预订航班”的工具被重试了两次，用户会被扣两次款吗？<strong>幂等性（Idempotency）</strong> 是确保操作执行一次和执行 N 次效果相同的关键属性。</p>
+<h4 id="rule-of-thumb-effect">Rule-of-Thumb: 所有会产生外部副作用的 Effect，都应设计成幂等的。</h4>
+<p><strong>实现方式：</strong></p>
+<ul>
+<li><strong>幂等键（Idempotency Key）</strong>：客户端生成一个唯一的请求 ID（例如，UUID），并在 API 请求的 Header 中传递它。</li>
+<li><strong>服务端逻辑</strong>：服务端首次处理该 ID 的请求时，会执行操作并将结果与该 ID 关联缓存起来。在缓存有效期内，任何携带相同 ID 的后续请求都会直接返回缓存的结果，而不会重复执行操作。</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>客户端 -&gt; 服务端: POST /book_flight (Idempotency-Key: a1b2c3d4)
+服务端:  (未见过 a1b2c3d4) -&gt; 执行预订 -&gt; 缓存结果 -&gt; 返回成功
+
+(网络超时，客户端重试)
+
+客户端 -&gt; 服务端: POST /book_flight (Idempotency-Key: a1b2c3d4)
+服务端:  (在缓存中找到 a1b2c3d4) -&gt; 不执行预订 -&gt; 直接返回缓存的成功结果
+</code></pre></div>
+
+<h3 id="26-ui">2.6 UI 一致性：最终的战场</h3>
+<p>即使后端逻辑完美，UI 的不一致也会毁掉用户体验。流式输出是 UI 竞态的重灾区。</p>
+<p><strong>解法：带版本的视图模型（Versioned View Model）</strong>
+UI 组件不应直消费原始的 token 流，而应消费一个附加了“轮次 ID” (<code>turnId</code>) 的事件流。</p>
+<ol>
+<li><strong>状态层</strong>：维护一个 <code>currentTurnId</code>，代表用户当前正在进行的交互轮次。</li>
+<li><strong>事件流</strong>：所有从后端推送的事件（token、工具状态、错误）都必须携带它们所属的 <code>turnId</code>。</li>
+<li><strong>UI 渲染层</strong>：组件在渲染任何数据前，先检查事件的 <code>turnId</code> 是否与当前 state 中的 <code>currentTurnId</code> 匹配。如果不匹配，则静默丢弃。</li>
+</ol>
+<p>这个简单的守卫可以确保即使用户快速打断，UI 也不会渲染来自旧交互轮次的任何残留信息。</p>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ol>
+<li><strong>拥抱并发</strong>：实时 Agent 的世界本质上是并发和异步的，将竞态视为设计时必须解决的核心问题，而不是边缘情况。</li>
+<li><strong><code>switchLatest</code> 是默认选择</strong>：对于任何由用户输入驱动、且只关心最新结果的流程，<code>switchLatest</code> 应该是你的首选和默认武器。</li>
+<li><strong>逻辑时钟是真相的标尺</strong>：用单调递增的“轮次 ID” (<code>turnId</code>) 来标记每一次交互，并在所有地方（Effect、Reducer、UI）用它来拒绝过时事件。</li>
+<li><strong>幂等性是可靠性的基石</strong>：为所有关键的、会改变外部世界的副作用（Effect）设计幂等性，以安全地处理网络重试。</li>
+<li><strong>UI 必须是状态的忠实投影</strong>：UI 不应有自己的复杂逻辑，它唯一的任务就是精确、带版本地渲染应用的状态。任何不匹配当前状态版本的数据都应被丢弃。</li>
+</ol>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<p><strong>Q1. 操作符选择</strong>
+你需要实现一个实时搜索功能：用户每输入一个字，就触发一次 LLM 意图识别。如果用户打字很快，我们要丢弃中间过程产生的请求，只处理最后一次输入。请问应该使用以下哪个算子组合？
+A. <code>mergeMap</code>
+B. <code>concatMap</code>
+C. <code>switchMap</code>
+D. <code>zip</code></p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><strong>答案：C. switchMap</strong></p>
+<p><strong>解析</strong>：</p>
+<ul>
+<li><code>switchMap</code>（或 <code>switchLatest</code>）的特性是“喜新厌旧”，当新事件（新输入）到达时，它会取消旧的内部流（之前的请求），完全符合实时搜索“只看最后结果”的需求。</li>
+<li><code>mergeMap</code> 会并行处理所有请求，导致结果乱序返回。</li>
+<li><code>concatMap</code> 会按顺序排队处理，导致严重的延迟（必须等第一个字识别完才处理第二个字）。</li>
+<li><code>zip</code> 用于合并多个流的结果，不适用于此场景。</li>
+</ul>
+</details>
+<p><strong>Q2. 简单的打断机制</strong>
+假设你有一个流 <code>llmResponseStream$</code> 正在输出一长段文本。现在有一个用户点击按钮产生的流 <code>stopButton$</code>。请描述如何组合这两个流，使得用户点击按钮时，文本输出立即停止。</p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><strong>答案</strong>：使用 <code>takeUntil</code> 算子。</p>
+<p><strong>描述</strong>：
+<code>activeStream$ = llmResponseStream$.takeUntil(stopButton$)</code></p>
+<p>当 <code>stopButton$</code> 发出任何一个事件时，<code>activeStream$</code> 会立即完成（Complete），从而停止接收 <code>llmResponseStream$</code> 的后续数据。在 FRP 库的底层实现中，这通常也会触发对源头（如网络请求）的取消信号。</p>
+</details>
+<p><strong>Q3. 过期事件过滤</strong>
+你的 Agent State 中记录了 <code>currentTurnId = 10</code>。此时，状态 Reducer 收到一个来自工具调用的事件：<code>{ type: "TOOL_RESULT", meta: { turnId: 8 }, data: "..." }</code>。根据本章的原则，你应该如何处理这个事件？</p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><strong>答案</strong>：直接丢弃（Drop/Ignore）。</p>
+<p><strong>解析</strong>：事件携带的 <code>turnId: 8</code> 小于当前状态的 <code>currentTurnId: 10</code>，说明这是一个“来自过去”的事件（可能是网络延迟导致的迟到回包，也可能是来自一个已被用户取消的交互）。此时系统的上下文已经推进到了第 10 轮交互，应用第 8 轮的结果会污染当前状态，造成逻辑混乱。</p>
+</details>
+<hr />
+<h3 id="_2">挑战题</h3>
+<p><strong>Q4. 多工具竞态设计 (Rule-of-Thumb 应用)</strong>
+场景：用户问“比较北京和上海的天气”。Agent 行发出两个工具调用：<code>GetWeather(Beijing)</code> 和 <code>GetWeather(Shanghai)</code>。LLM 需要拿到<strong>所有两个</strong>结果后才能开始生成对比回答。如果其中一个失败，或者用户在等待期间取消了请求，该怎么办？请用 FRP 的术语描述这个流的拓扑结构。</p>
+<p><em>提示：思考 <code>forkJoin</code> / <code>zip</code> 如何与 <code>takeUntil</code> 和 <code>catchError</code> 组合。</em></p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><strong>参考设计</strong>：</p>
+<ol>
+<li><strong>并行汇集</strong>：使用 <code>forkJoin({ beijing: streamBJ$, shanghai: streamSH$ })</code>。<code>forkJoin</code> 会等待所有内部流都完成（各自发出一个值并结束），然后将结果以指定的 key-value 形式合并成一个对象 <code>{ beijing: ResultBJ, shanghai: ResultSH }</code> 发向下游。</li>
+<li><strong>错误处理策略</strong>：<ul>
+<li><strong>“一损俱损”</strong>：在 <code>forkJoin</code> <em>之后</em> 使用 <code>.catchError()</code>。任何一个内部流的失败都会导致整个 <code>forkJoin</code> 失败。</li>
+<li><strong>“尽力而为”</strong>：在<em>每个内部流</em>上（<code>streamBJ$</code>, <code>streamSH$</code>) 使用 <code>.catchError(err =&gt; of({ error: err }))</code>。这样即使一个流失败了，它也会返回一个错误对象而不是让整个组合流失败。下游逻辑可以根据结果对象中是否有 <code>error</code> 字段来决定如何生成回答（例如，“我查到了北京的天气，但上海的查询失败了”）。</li>
+</ul>
+</li>
+<li><strong>取消机制</strong>：将整个 <code>forkJoin</code> 流用 <code>takeUntil(cancelSignal$)</code> 包裹。<code>finalStream$ = forkJoin(...).takeUntil(cancelSignal$)</code>。这样，一旦取消信号发出，所有底层的网络请求都会被中止。</li>
+</ol>
+</details>
+<p><strong>Q5. 乐观 UI 的数据竞争 (Thinking Challenge)</strong>
+你正在做一个即时修改 Prompt 的编辑器。</p>
+<ol>
+<li>用户输入 "Hello"，前端立即显示 "Hello"（乐观更新），并向服务器发送保存请求（携带本地 <code>version: 1</code>）。</li>
+<li>在服务器返回确认之前，用户又快速输入了 " World"，前端显示 "Hello World"，并发送第二个保存请求（携带本地 <code>version: 2</code>）。</li>
+<li>此时，第一个请求的响应回了：<code>{ status: "success", content: "Hello", version: 1 }</code>。</li>
+</ol>
+<p>如果直接用服务器返回的数据覆盖前端状态，用户的 " World" 就会消失。请设计一种机制解决这个问题。</p>
+<p><em>提示：CRDT 太复杂，思考简单的 Version Check 或 Patch 机制。</em></p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><strong>参考策略：基于版本的客户端防御</strong></p>
+<p>前端除了维护文本内容外，还需维护两个版本号：</p>
+<ul>
+<li><code>syncedVersion</code>: 已被服务器确认的最新版本号。</li>
+<li><code>localVersion</code>: 当前本地文本对应的版本号。</li>
+</ul>
+<p><strong>流程：</strong></p>
+<ol>
+<li>初始状态: <code>content: ""</code>, <code>syncedVersion: 0</code>, <code>localVersion: 0</code>。</li>
+<li>输入 "Hello": <code>content: "Hello"</code>, <code>localVersion: 1</code>。发送请求 <code>save(content: "Hello", version: 1)</code>。</li>
+<li>输入 " World": <code>content: "Hello World"</code>, <code>localVersion: 2</code>。发送请求 <code>save(content: "Hello World", version: 2)</code>。</li>
+<li>收到第一个响应 <code>(version: 1)</code>: 前端检查 <code>response.version (1) &lt; localVersion (2)</code>。</li>
+<li><strong>决</strong>: 这说明服务器确认的是一个旧版本。我们不能用它的内容覆盖当前更新的文本。只更新 <code>syncedVersion = 1</code>。UI 显示一个“正在保存...”的状态，因为 <code>syncedVersion &lt; localVersion</code>。</li>
+<li>收到第二个响应 <code>(version: 2)</code>: 前端检查 <code>response.version (2) == localVersion (2)</code>。</li>
+<li><strong>决策</strong>: 版本匹配！更新 <code>syncedVersion = 2</code>。此时 <code>syncedVersion == localVersion</code>，UI 可以显示“已保存”。</li>
+</ol>
+</details>
+<p><strong>Q6. 幂等性工具设计</strong>
+你需要设计一个 <code>bookFlight(flightId, userId)</code> 的工具。这个工具通过 API 调用外部服务，可能会因为网络问题超时并被 Agent 的运行时重试。如何确保重试不会为同一个用户重复预订同一趟航班？请描述关键的设计点。</p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><strong>关键设计点：使用幂等键 (Idempotency Key)</strong></p>
+<ol>
+<li><strong>生成唯一键</strong>：在 Agent 的 Effect 执行器层，为<strong>每一次独立的、有意的</strong> <code>bookFlight</code> <em>意图</em>生成一个唯一的 ID，称之为 <code>idempotencyKey</code>（例如 UUID）。这个 ID 代表了“为用户 X 预订航班 Y”这个<em>具体操作</em>，而不是一次网络请求。</li>
+<li><strong>传递键</strong>：将此 <code>idempotencyKey</code> 作为 HTTP Header（如 <code>Idempotency-Key: a1b2c3d4-....</code>）随 API 请求发送给航班预订服务。</li>
+<li><strong>服务端处理</strong>：
+    a.  航班预订服务收到请求后，首先检查 Header 中的 <code>idempotencyKey</code>。
+    b.  查询一个缓存（如 Redis），看这个 key 是否已经存在。
+    c.  <strong>如果不存在</strong>：说明是新请求。将 key 存入缓存并设置一个状态（如 <code>PROCESSING</code>），然后执行实际的预订数据库操作。操作成功后，将预订结果存入缓存，并将 key 的状态更新为 <code>COMPLETED</code>。返回成功响应。
+    d.  <strong>如果存在且状态为 <code>COMPLETED</code></strong>：说明是重试请求。直接从缓存中返回之前保存的成功结果，<strong>不执行</strong>数据库操作。
+    e.  <strong>如果存在且状态为 <code>PROCESSING</code></strong>：说明一个请求还在处理中，可以返回一个冲突错误（如 409 Conflict），让客户端稍后重试。</li>
+</ol>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="51-mergemap-switchmap">5.1 滥用 <code>mergeMap</code> 代替 <code>switchMap</code></h3>
+<ul>
+<li><strong>错误</strong>：<code>userInput$.pipe(mergeMap(input =&gt; callLLM(input)))</code></li>
+<li><strong>后果</strong>：如果你快速输入 "A", "B", "C"，LLM 可能会以 "B", "A", "C" 的顺序返回结果。你的聊天窗口会先显示 B 的回答，然后突然被 A 的回答覆盖，最后又变成 C 的回答，用户会感觉 Agent 在“抽搐”。</li>
+<li><strong>修正</strong>：在任何只关注“最后意图”的地方，永远使用 <code>switchMap</code>。<code>mergeMap</code> 只适用于那些你希望所有并发操作都独立完成且不相互干扰的场景（比如并行获取多个不相关的 UI 小部件数据）。</li>
+</ul>
+<h3 id="52-dangling-side-effects">5.2 忘记取消物理副作用 (Dangling Side Effects)</h3>
+<ul>
+<li><strong>错误</strong>：在 <code>switchMap</code> 中，FRP 库会自动取消对旧流的<em>订阅</em>，但它不知道如何取消你手动启动的、非标准的异步操作（如一个没有实现 <code>abort</code> 的 <code>fetch</code> 封装，或一个 <code>setTimeout</code>）。</li>
+<li><strong>后果</strong>：虽然 UI 上不再显示旧结果，但后台的 Python 解释器还在空跑那个脚本，或者昂贵的 GPT-4 API 还在继续计费直到生成完所有 token。这被称为“悬空副作用”。</li>
+<li><strong>修正</strong>：编写 Tool Effect 时，必须使其“可取消”。现代的 <code>fetch</code> API 支持 <code>AbortSignal</code>。对于自定义的异步任务，也应该提供一个 <code>cancel()</code> 方法或接受一个类似的信号，并在流被取消时调用它。</li>
+</ul>
+<h3 id="53">5.3 混淆“事件时间”与“处理时间”</h3>
+<ul>
+<li><strong>错误</strong>：在日志记录或事件排序时，使用事件被<em>处理</em>时的时间戳（<code>Date.now()</code>）作为其发生时间。</li>
+<li><strong>后果</strong>：当系统负载高，事件在队列中积压时，一个 10:00 发生的事件可能在 10:05 才被处理。如果用处理时间排序，会导致因果倒置，让调试变得如同噩梦。</li>
+<li><strong>修正</strong>：在事件产生的源头（Source），例如收到用户输入的那个瞬间，就打上时间戳或序列号，并将其作为事件元数据的一部分，在整个处理链路中透传。</li>
+</ul>
+<h3 id="54-ui">5.4 乐观 UI 没有健全的回滚机制</h3>
+<ul>
+<li><strong>错误</strong>：为了提升体验，用户点击“删除”后立刻从 UI 移除条目，但在后端的 DB 删除操作失败后，没有编写将条目加回 UI 的逻辑。</li>
+<li><strong>后果</strong>：用户以为删除了，但刷新页面后数据又回来了。这会严重破坏用户对产品可靠性的信任。</li>
+<li><strong>修正</strong>：在 FRP 链中，<code>catchError</code> 操作符是关键。它不仅要捕获错误，还必须能够发出一个“补偿动作”（Compensating Action），这个动作会触发 Reducer 将状态回滚到操作之前的样子。</li>
+</ul>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter10.html" class="nav-link prev">← [Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</a><a href="chapter12.html" class="nav-link next">Chapter 12｜Token Budget 控制：预算就是产品体验 →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

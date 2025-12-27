@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-6-api">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</h1>
+<h2 id="1">1. 开篇：从“调用函数”到“管理副作用”</h2>
+<p>在简单的脚本中，调用一个 API 只是写一行 <code>response = await client.get(...)</code>。但在一个长时运行、高并发、且由不确定的 LLM 驱动的 Agent 系统中，工具调用（Tool Calling）是系统的<strong>风险中心</strong>。</p>
+<p>LLM Agent 的工具调用面临双重混沌：</p>
+<ol>
+<li><strong>内部混沌（模型侧）</strong>：LLM 可能幻觉出不存在的函数、传错参数类型、或者陷入“死循环调用”。</li>
+<li><strong>外部混沌（环境侧）</strong>：API 会超时、数据库会锁死、网络会抖动、第三方服务会限流。</li>
+</ol>
+<p>在 FRP（Functional Reactive Programming）架构下，我们<strong>不直接调用工具</strong>。我们将工具调用建模为<strong>副作用（Side Effect）的管理流程</strong>：</p>
+<ul>
+<li>LLM 发出的不是指令，而是<strong>意图事件（Intent Event）</strong>。</li>
+<li>系统对意图进行<strong>校验、去重、调度</strong>。</li>
+<li>执行器（Effect Runner）在隔离环境中运行工具，产生<strong>结果流（Result Stream）</strong>。</li>
+<li>结果流被<strong>回纳（Reduced）</strong>进系统状态，再次驱动 LLM。</li>
+</ul>
+<p>本章的目标是构建一个<strong>反脆弱</strong>的工具执行层：它不仅能执行任务，还能在失败中恢复、在拥堵中降级，并始终保持对 LLM 和用户的诚实。</p>
+<hr />
+<h2 id="2">2. 文字论述</h2>
+<h3 id="21-tool-intent-vs-effect-execution">2.1 Tool Intent vs. Effect Execution：纯逻辑与副作用的隔离</h3>
+<p>在 FRP 中，我们追求核心逻辑的“纯函数”化。这意味着 Agent 的决策过程（Input -&gt; Planning）不应包含任何网络 I/O。</p>
+<p>我们将过程拆分为两个独立的流：</p>
+<ol>
+<li><strong>意图流 (Intent Stream)</strong>：这是“大脑”的输出它包含 <code>tool_name</code>、<code>arguments</code>、<code>reasoning</code>。它是纯数据，生成它的过程极快且无副作用。</li>
+<li><strong>执行流 (Execution Stream)</strong>：这是“手脚”的动作。它监听意图流，执行 HTTP 请求、DB 查询或 Python 代码。它包含延迟、失败和重试。</li>
+</ol>
+<p><strong>架构图：意图-执行-回执循环</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">[ LLM Decision Core ]</span>
+<span class="w">       </span><span class="na">| (emits)</span>
+<span class="w">       </span><span class="na">v</span>
+<span class="na">( ToolIntent Event )  &lt;-- 纯数据： &quot;我想查天气，地点北京&quot;</span>
+<span class="w">       </span><span class="na">|</span>
+<span class="w">       </span><span class="na">+---&gt; [ 1. 拦截器/中间件 ] (鉴权、预算检查、熔断检查)</span>
+<span class="w">       </span><span class="na">|</span>
+<span class="w">       </span><span class="na">v</span>
+<span class="na">[ Effect Scheduler ]  &lt;-- 调度器 (控制并发、批处理)</span>
+<span class="w">       </span><span class="na">|</span>
+<span class="w">       </span><span class="na">+--- (async execution) ---&gt; [ 外部 API / Python Sandbox ]</span>
+<span class="w">                                          </span><span class="na">|</span>
+<span class="w">                                    </span><span class="na">(耗时</span><span class="o">:</span><span class="w"> </span><span class="s">200ms - 30s)</span>
+<span class="w">                                          </span><span class="na">|</span>
+<span class="w">                                          </span><span class="na">v</span>
+<span class="na">( ToolReceipt Event ) &lt;-- 结构化回执： &quot;状态200，内容：25度，耗时300ms&quot;</span>
+<span class="w">       </span><span class="na">|</span>
+<span class="w">       </span><span class="na">v</span>
+<span class="na">[ State Reducer ]     &lt;-- 更新记忆，触发下一次 LLM 推理</span>
+</code></pre></div>
+
+<p>这种分离的好处在于：<strong>可测试性</strong>。你可以在不联网的情况下，通过向意图流发送 Mock 事件来测试 Agent 的规划能力；也可以通过回放历史的意图事件来压力测试执行器。</p>
+<h3 id="22">2.2 失败分类学：构建精细的错误处理策略</h3>
+<p>将所有异常都 <code>try-catch</code> 并重试是初级做法。在流式系统中，我们需要根据错误的<strong>语义</strong>将它们分流到不同的处理管道：</p>
+<p>| 错误类型 | 典型场景 | FRP 处理策略 | 目标接收方 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">错误类型</th>
+<th style="text-align: left;">典型场景</th>
+<th style="text-align: left;">FRP 处理策略</th>
+<th style="text-align: left;">目标接收方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>瞬态错误 (Transient)</strong></td>
+<td style="text-align: left;">网络超时 (504)、连接重置、拥塞</td>
+<td style="text-align: left;"><strong>Retry with Backoff</strong> (重试流)</td>
+<td style="text-align: left;">执行器内部消化</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>语义错误 (Semantic)</strong></td>
+<td style="text-align: left;">参数缺失、类型错误、400 Bad Request</td>
+<td style="text-align: left;"><strong>Pass Through</strong> (透传)</td>
+<td style="text-align: left;"><strong>LLM</strong> (让它自己改)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>鉴权/配额 (Policy)</strong></td>
+<td style="text-align: left;">Key失效 (401)、余额不足、限流 (429)</td>
+<td style="text-align: left;"><strong>Circuit Break</strong> (熔断)</td>
+<td style="text-align: left;">运维/人类用户</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>致命错 (Fatal)</strong></td>
+<td style="text-align: left;">工具下线 (404)、沙箱崩溃</td>
+<td style="text-align: left;"><strong>Fallback</strong> (降级)</td>
+<td style="text-align: left;">规划器 (Planner)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Rule of Thumb</strong>：如果是因为 LLM "太蠢"导致的错误（如传了非法参数），千万不要重试，直接把错误文本作为 Prompt 喂回给它，这叫 "Error Correction Prompting"。</li>
+</ul>
+<h3 id="23-circuit-breaker">2.3 Circuit Breaker (熔断器) 的响应式实现</h3>
+<p>当某个工具（如 Bing Search）的失败率飙升时，继续让 LLM 调用它只会浪费 Token 并增加延迟。我们需要一个响应式的熔断器。</p>
+<p>在 FRP 中，熔断器是一个维护状态的 <strong>Scan</strong> 算子：</p>
+<ol>
+<li><strong>输入</strong>：工具执行结果流。</li>
+<li><strong>逻辑</strong>：在滑动时间窗口（Window）内，计算失败比率。如果 &gt; 阈值，状态转为 <code>OPEN</code>。</li>
+<li><strong>输出</strong>：<strong>ToolAvailability Signal（工具可用性信号）</strong>。</li>
+</ol>
+<p><strong>关键点：熔断状态如何通知 LLM？</strong>
+这与传统微服务熔断不同。在 Agent 中，熔断器不仅要在代码层面拦截请求，还要<strong>实时修改 System Prompt</strong>。</p>
+<ul>
+<li><strong>Prompt Patching</strong>：当 <code>Availability Signal</code> 变为 <code>OPEN</code> 时，Prompt Manager 收到信号，在 Prompt 中注入一段话：<em>“注意：搜索工具当前处于维护模式，不可用。请利用你的内部知识回答。”</em></li>
+<li>这样，LLM 就会自然地停止生成调用该工具的 Token，而不是生成了调用后再被代码拦截，造成困惑。</li>
+</ul>
+<h3 id="24-retry-backoff-jitter">2.4 Retry, Backoff 与 Jitter：流的时间控制</h3>
+<p>重试不仅是循环，更是对“时间流”的操作。</p>
+<ul>
+<li><strong>Backoff（退避）</strong>：第一次失败等 1s，第二次等 2s，第三次等 4s。</li>
+<li><strong>Jitter（抖动）</strong>：必须引入随机性。<code>delay = base_delay * 2^retries + random(0, 100ms)</code>。</li>
+<li><strong>可视化时间线</strong>：</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>Attempt 1 (Fail)
+|
++--- 1s (Backoff) ---+
+                     |
+                     Attempt 2 (Fail)
+                     |
+                     +------- 2s + Jitter -------+
+                                                 |
+                                                 Attempt 3 (Success)
+                                                 |
+                                                 v
+                                          (Result Event Emitted)
+</code></pre></div>
+
+<p>在 FRP 中，这通常通过 <code>retryWhen</code> 算子配合 <code>timer</code> 和 <code>zip</code> 来优雅实现，而不是写复杂的 <code>while</code> 循环。</p>
+<h3 id="25-idempotency-key">2.5 幂等键 (Idempotency Key) 与去重</h3>
+<p>Agent 系统中常发生“重复提交”：</p>
+<ol>
+<li>用户狂点“重试”按钮。</li>
+<li>LLM 在流式输出中断后，重新生成时重复了之前的工具调用文本。</li>
+</ol>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li><strong>生成 Key</strong>：Key = <code>Hash(ConversationID + TurnID + ToolName + SortedArguments)</code>。</li>
+<li><strong>去重算子</strong>：使用 <code>distinctKey</code> 或带有 TTL（生存时间）的缓存。</li>
+<li><strong>行为</strong>：如果 Key 命中缓存，直接返回缓存中的 <code>Result Event</code>，不再发起物理网络请求。对于写操作（如“发送邮件”），幂等性至关重要。</li>
+</ul>
+<h3 id="26-fallback-strategies">2.6 回退策略 (Fallback Strategies)</h3>
+<p>当工具彻底失效（熔断器打开或重试耗尽）时，系统不能 Crash，必须降级。FRP 的 <code>catchError</code> 或 <code>switchIfEmpty</code> 算子允许我们平滑地切换流的来源：</p>
+<ol>
+<li><strong>同类切换 (Switch to Alternative)</strong>：Google Search 挂了 -&gt; 切换到 Bing Search 流。</li>
+<li><strong>缓存回退 (Stale-while-error)</strong>：无法获取实时股价 -&gt; 返回 10 分钟前的缓存数据，并在 <code>Result Event</code> 中标记 <code>quality: degraded</code>。</li>
+<li><strong>空回退 (Graceful Empty)</strong>：返回一个特殊的“空结果”对象，Prompt 模块将其渲染为：“系统尝试了搜索，但服务暂时不可用”。</li>
+</ol>
+<h3 id="27-toolreceipt">2.7 结构化工具回执 (ToolReceipt)</h3>
+<p>工具返回给系统的不应只是一个 <code>String</code>。它必须是一个结构化对象，满足不同消费者的需求：</p>
+<ul>
+<li><strong>消费者 A：LLM</strong> -&gt; 需要简洁的文本摘要（Token 越少越好）。</li>
+<li><strong>消费者 B：UI</strong> -&gt; 需要富文本、图片 URL、JSON 数据（用于渲染卡片）。</li>
+<li><strong>消费者 C：Metrics</strong> -&gt; 需要耗时、Token 消耗、原始状态码。</li>
+</ul>
+<p><strong>Schema 设计建议</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;call_123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;success&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">},</span><span class="w">       </span><span class="c1">// 原始数据</span>
+<span class="w">  </span><span class="nt">&quot;summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;北京今日晴...&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// 喂给 LLM 的摘要</span>
+<span class="w">  </span><span class="nt">&quot;display&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">              </span><span class="c1">// 喂给 UI 的组件数据</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weather_card&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;icon&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sunny&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;temp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">25</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">                 </span><span class="c1">// 喂给监控</span>
+<span class="w">    </span><span class="nt">&quot;latency_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">240</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;weather_api_v3&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;cached&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="28-sandboxing">2.8 安全沙箱与隔离 (Sandboxing)</h3>
+<p>对于 Python Code Interpreter 或 SQL Tool，执行本身就是一个高风险操作。</p>
+<ul>
+<li><strong>隔离作为副作用</strong>：将沙箱执行视为一个<strong>远程异步调用</strong>。不要在 Agent 的主进程中 <code>exec()</code> 代码。</li>
+<li><strong>资源限制</strong>：在执行流中加入 <code>timeout</code> 算子。如果 Python 代码 5 秒未返回，主流直接切断，并发送 <code>SIGKILL</code> 给沙箱容器。</li>
+<li><strong>只读模式</strong>：对于数据库工具，FRP 可以在意图流阶段进行正则检查，如果检测到 <code>DROP</code> / <code>DELETE</code> 且没有高权限标记，直接在流中拦截并替换为“权限拒绝”事件。</li>
+</ul>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>意图与执行分离</strong>：让 LLM 负责“想”，让 Runtime 负责“做”。</li>
+<li><strong>错误分层处理</strong>：网络错误重试，语义错误反馈，权限错误熔断。</li>
+<li><strong>Prompt 联动</strong>：熔断器状态必须实时反映在 Prompt 中，防止 LLM 做无用功。</li>
+<li><strong>幂等性保护</strong>：防止 LLM 的不确定性导致现实世界的重复副作用。</li>
+<li><strong>回执结构化</strong>：一个结果，多种视图（LLM 视图、UI 视图、监控视图）。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<p><strong>Q1. 错误分类实践</strong>
+对于以下错误，请分别归类为（瞬态、语义、权限、致命）并给出处理动作：</p>
+<ol>
+<li>HTTP 502 Bad Gateway</li>
+<li>JSONDecodeError: Expecting value</li>
+<li>HTTP 403 Forbidden (API Key expired)</li>
+<li>HTTP 400 Bad Request (Invalid date format)</li>
+</ol>
+<details>
+<summary>参考答案</summary>
+<ol>
+<li><strong>瞬态</strong> -&gt; 重试 (Retry with backoff)。</li>
+<li><strong>致命/语义</strong> -&gt; 视情况而定。如果是工具返回的 JSON 坏了是工具故障（致命）；如果是 LLM 生成的 JSON 坏了，是语义错误 -&gt; 反馈给 LLM。</li>
+<li><strong>权限</strong> -&gt; 熔断/停止，报警。</li>
+<li><strong>语义</strong> -&gt; 反馈给 LLM："Date format is invalid, please use YYYY-MM-DD"。</li>
+</ol>
+</details>
+<p><strong>Q2. 幂等键设计</strong>
+如果 Agent 有一个工具 <code>send_email(to, subject, body)</code>。
+用户说：“帮我给老板发邮件请假”。Agent 调用了一次。
+用户觉得 Agent 没反应，又说了一遍：“发了吗？没发快发”。
+如何设计幂等键防止发两封邮件？</p>
+<details>
+<summary>参考答案</summary>
+<ul>
+<li><strong>Key 组成</strong>：<code>Hash(User_ID, Date, Function_Name="send_email", Argument_Hash)</code>。</li>
+<li><strong>策略</strong>：<ol>
+<li>如果仅仅是对参数哈希，可能用户真的想发两封一样的。</li>
+<li>更好的做法是引入 <code>TimeWindow</code>。在 5 分钟内，相同的（收件人+主题+正文）哈希会被视为重复。</li>
+<li>或者，Agent 在内部状态中维护 <code>PendingActions</code> 列表，第二次请求时检查是否已有相的 Action 在 <code>Pending</code> 或 <code>RecentlyCompleted</code> 状态。</li>
+</ol>
+</li>
+</ul>
+</details>
+<p><strong>Q3. 超时算子</strong>
+在 FRP 中，如果一个工具调用流 <code>stream.timeout(3000)</code> 触发了超时，通常会发生什么？原来的 HTTP 请求会自动断开吗？</p>
+<details>
+<summary>参考答案</summary>
+<ul>
+<li><strong>流的行为</strong>：流会抛出 <code>TimeoutError</code> 并终止订阅。</li>
+<li><strong>副作用的行为</strong>：<strong>不一定</strong>。这取决于你的 Effect Runner 实现。</li>
+<li><strong>正确做法</strong>：必须利用 FRP 的 <code>unsubscribe</code> 回调或 <code>AbortController</code> 信号。当流超时取消订阅时，触发回调去调用 <code>xhr.abort()</code> 或 <code>process.kill()</code>。否则会产生“僵尸请求”在后台空耗资源。</li>
+</ul>
+</details>
+<h3 id="_2">挑战题</h3>
+<p><strong>Q4. 熔断器与 Prompt 的动态一致性</strong>
+你设计了一个机制，当工具挂了，Prompt 会更新。
+场景：用户问“今天天气如何？” -&gt; Agent 生成调用意图 -&gt; 工具熔断器状态为 OPEN -&gt; 请求被拦截。
+此时 Agent 处于“等待结果”状态。你该如何把“工具不可用”这个信息传回给 Agent，让它优雅地回复用户？</p>
+<details>
+<summary>参考答案</summary>
+<ul>
+<li><strong>步骤</strong>：<ol>
+<li>拦截器拦截意图后，<strong>人工合成</strong>一个 <code>ToolReceipt</code> 事件。</li>
+<li>事件内容：<code>status: error</code>, <code>error_type: circuit_breaker_open</code>, <code>content: "Tool [Weather] is currently unavailable due to high failure rate."</code></li>
+<li>这个合成事件像普通结果一样流回 LLM。</li>
+<li>LLM 看到这个“结果”，会根据上下文生成：“抱歉，天气服务暂时不可用，我无法查询。”</li>
+<li>同时，下一轮对话的 System Prompt 才会更新包含“不要调用 Weather”的指令。</li>
+</ol>
+</li>
+</ul>
+</details>
+<p><strong>Q5. 幻觉参数纠正流</strong>
+LLM 调用 <code>lookup_user(name="John Doe")</code>，但 API 只接受 <code>user_id</code>。API 返回 400。
+设计一个自动化的 FRP 流程，在不打扰用户的情况下尝试修正这个问题。假设你有一个辅助工具 <code>search_user_id(name)</code>。</p>
+<details>
+<summary>参考答案</summary>
+<p>这是一个 <strong>"Chain of Repair"</strong> 模式：</p>
+<ol>
+<li><code>ToolExecutionStream</code> 收到 400 错误，错误信息 "Invalid param: name. Expected: id"。</li>
+<li>进入 <code>catchError</code> 分支，不仅不报错，反而通过 <code>flatMap</code> 触发一个新的子意图：<code>Call(search_user_id, name="John Doe")</code>。</li>
+<li>子工具返回 ID <code>12345</code>。</li>
+<li>逻辑层利用这个结果，重新构造原始请求：<code>Call(lookup_user, id="12345")</code>。</li>
+<li>执行成功。</li>
+<li><strong>注意</strong>：这需要 Agent 具备 "Self-Correction" 的策略配置，或者在 Effect Runner 层硬编码特定的修复逻辑（不太推荐硬编码，最好由 LLM 自己根据错误提示进行多轮思考）。</li>
+</ol>
+</details>
+<p><strong>Q6. 大数据量回执处理</strong>
+如果工具是 <code>read_file</code>，返回了 1MB 的文本，直接喂给 LLM 会撑爆 Context Window。请描述一个基于流的处理方案。</p>
+<details>
+<summary>参考答案</summary>
+<ol>
+<li><strong>分流处理</strong>：ToolReceipt 分为 <code>metadata</code> (大小, 类型) 和 <code>blob</code> (实际内容)。</li>
+<li><strong>Blob 存储</strong>：将 1MB 内容存入临的 Vector Store 或 Blob Storage，生成一个引用 ID <code>ref::file_chunk_01</code>。</li>
+<li><strong>Prompt 策略</strong>：<ul>
+<li><strong>方案 A (摘要)</strong>：触发一个由小模型（如 GPT-3.5-Turbo）运行的“摘要流”，将 1MB 压缩为 500 tokens 摘要，放入 Receipt。</li>
+<li><strong>方案 B (RAG)</strong>：仅在 Receipt 中返回引用 ID："File loaded. ID: ref::... Use 'search_file' to read content."</li>
+</ul>
+</li>
+<li>LLM 看到的是：“文件已读取（1MB），内容摘要如下...”。</li>
+</ol>
+</details>
+<p><strong>Q7. 幽灵写入 (Ghost Writes)</strong>
+用户让 Agent "向数据库写入一条记录"。Agent 调用了工具，但在收到回执前，用户的网络断了（前端 WebSocket 断开）。Agent 的后台流应该继续吗？还是回滚？</p>
+<details>
+<summary>参考答案</summary>
+<ul>
+<li><strong>原则</strong>：如果是<strong>读</strong>操作，可以取消以节省资源；如果是<strong>写</strong>操作，通常应该<strong>继续完成</strong>，保证数据一致性。</li>
+<li><strong>FRP 实现</strong>：<ul>
+<li>用户断开触发 <code>ConnectionLost</code> 事件。</li>
+<li>对于标为 <code>Safe</code> (Read-only) 的流，执行 <code>takeUntil(ConnectionLost)</code>。</li>
+<li>对于标记为 <code>Critical</code> (Write) 的流，使用 <code>detach</code> 或忽略取消信号，直到 Effect 完成。</li>
+<li><strong>持久化</strong>：将结果写入 <code>UnreadNotifications</code> 队列，等用户重连后推送：“你刚才要求的写入已完成”。</li>
+</ul>
+</li>
+</ul>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<ol>
+<li>
+<p><strong>“僵尸”进程 (Zombie Processes)</strong></p>
+<ul>
+<li><em>现象</em>：用户在前端疯狂点击“停止”，UI 停了，但服务器 CPU 占用率 100%，因为后台的 Python 解释器或复杂的 SQL 查询根本没收到取消信号。</li>
+<li><em>调试</em>：检查 Effect Runner 是否正确绑定了 FRP 的 <code>dispose/unsubscribe</code> 到底层驱动的 <code>abort()</code> 方法。</li>
+</ul>
+</li>
+<li>
+<p><strong>上下文爆炸 (Context Explosion)</strong></p>
+<ul>
+<li><em>现象</em>：爬虫工具抓取了一个巨大的 HTML 页面直接返回。LLM 的 Context 瞬间被填满，导致后续无法生成或产生巨额 Token 账单。</li>
+<li><em>对策</em>：在 Tool Runner 层设置<strong>硬截断</strong>（如最大 2000 字符），并在末尾添加 <code>...[truncated]</code> 标记。</li>
+</ul>
+</li>
+<li>
+<p><strong>工具参数的 JSON 注入</strong></p>
+<ul>
+<li><em>现象</em>：LLM 生成的 JSON 参数格式稍微有点错（如多了一个逗号），导致 <code>JSON.parse</code> 失败。</li>
+<li><em>对策</em>：不要使用标准的严通过 <code>json.loads</code>。使用 <code>json5</code> 或专门的 "Fuzzy JSON Parser"（很多 LLM 库自带），它们能容忍常见的格式错误。</li>
+</ul>
+</li>
+<li>
+<p><strong>死循环的“我错了”</strong></p>
+<ul>
+<li><em>现象</em>：Agent 调用工具 -&gt; 报错 -&gt; Agent 道歉并重试（参数没变） -&gt; 报错 -&gt; Agent 道歉并重试...</li>
+<li><em>对策</em>：必须检测<strong>连续重复的错误</strong>。如果同一个工具连续报错 3 次且参数相似，强制触发致命错误，终止对话流。</li>
+</ul>
+</li>
+<li>
+<p><strong>隐私数据泄露到 Prompt</strong></p>
+<ul>
+<li><em>现象</em>：工具返回了包含用户手机号的原始日志，被直接塞进了 Prompt 历史。虽然没有输出给用户，但这些数据留在了 LLM 提供商的日志中。</li>
+<li><em>对策</em>：定义 PII（个人敏感信息）过滤器算子，在 <code>ToolReceipt</code> 进入 State 之前进行正则清洗。</li>
+</ul>
+</li>
+</ol>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter5.html" class="nav-link prev">← Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</a><a href="chapter7.html" class="nav-link next">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流 →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

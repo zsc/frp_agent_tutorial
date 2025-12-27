@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="appendix-beventstatereceipttrace-schema">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</h1>
+<h2 id="1">1. 开篇段落：协议即系统</h2>
+<p>在传统的面向对象编程（OOP）中，系统的骨架是类（Classes）和接口（Interfaces）；而在函数式响应式编程（FRP）中，<strong>系统的骨架是数据流（Data Streams）中的 Schema</strong>。</p>
+<p>由于 FRP 将“行为”抽象为算子（Operators），系统中流动的数据结构（Payloads）就成为了定义系统能力的唯一约束。一个设计良好的 Schema 体系能够带来以下巨大的工程红利：</p>
+<ol>
+<li><strong>Time Travel Debugging</strong>：只要数据结构是可序列化的（Serializable），我们就能录制并回放任何 Bug。</li>
+<li><strong>前后端解耦</strong>：Schema 定义了 UI 渲染层与 Agent 逻辑层的契约。</li>
+<li><strong>异构系统集成</strong>：标准的信封格式使得 Agent 可以轻松挂载到 WebSocket、gRPC 或 HTTP Server 上。</li>
+</ol>
+<p>本章不讨论具体的数据库选型（SQL vs NoSQL），而是专注于定义<strong>内存中流动的数据协议</strong>。我们将详细拆解四个核心维度：<code>Event</code>（输入事实）、<code>State</code>（聚合状态）、<code>Receipt</code>（副作用结果）和 <code>Trace</code>（观测元数据）。</p>
+<hr />
+<h2 id="2-schema">2. 文字论述与详细 Schema 定义</h2>
+<h3 id="b1-event-schema">B.1 Event Schema：不可变的原子事实</h3>
+<p>Event 是系统中发生的“事情”。在 FRP 语义下，Event 必须是 <strong>Immutable（不可变）</strong> 的。一旦产生，它就是历史的一部分，不可修改。</p>
+<h4 id="211-the-universal-envelope">2.1.1 通用信封 (The Universal Envelope)</h4>
+<p>为了让 Runtime 能够统一处理日志、路由、重试和序列化，所有具体的业务事件都必须包裹在一个标准信封中。</p>
+<div class="codehilite"><pre><span></span><code><span class="cm">/**</span>
+
+<span class="cm"> * 标准事件信封 (The Envelope)</span>
+<span class="cm"> * T: 具体的 Payload 类型</span>
+<span class="cm"> */</span>
+<span class="kd">interface</span><span class="w"> </span><span class="nx">AgentEvent</span><span class="o">&lt;</span><span class="nx">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">any</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// --- 标识区 ---</span>
+
+<span class="w">  </span><span class="c1">// 唯一 ID。荐使用 UUID v7，因其包含时间戳信息，在数据库索引和日志排序中性能更好</span>
+<span class="w">  </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span>
+
+<span class="w">  </span><span class="c1">// 事件类型。采用点分命名法，e.g., &quot;user.voice.chunk&quot;, &quot;sys.lifecycle.stop&quot;</span>
+<span class="w">  </span><span class="kr">type</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span>
+
+<span class="w">  </span><span class="c1">// 发生时间。必须是 ISO 8601 UTC 字符串，e.g., &quot;2023-10-27T10:00:00.123Z&quot;</span>
+<span class="w">  </span><span class="c1">// 切勿使用本地时间或单纯的 Unix Timestamp (调试时难以阅读)</span>
+<span class="w">  </span><span class="nx">timestamp</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// --- 逻辑控制区 ---</span>
+
+<span class="w">  </span><span class="c1">// 来源标识。用于区分多路输入，e.g., &quot;ws_connection_1&quot;, &quot;timer_system&quot;</span>
+<span class="w">  </span><span class="nx">source</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 逻辑时钟/序列号 (可选)。用于在分布式或乱序网络中重建因果关系</span>
+<span class="w">  </span><span class="nx">sequenceId?</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// --- 元数据区 (Metadata) ---</span>
+<span class="w">  </span><span class="c1">// 存放不影响业务逻辑，但对基础设施至关重要的信息</span>
+<span class="w">  </span><span class="nx">meta</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">correlationId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// 链路追踪 ID</span>
+<span class="w">    </span><span class="nx">userId?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">       </span><span class="c1">// 归属用户</span>
+<span class="w">    </span><span class="nx">clientVersion?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// 客户端版本 (用于处理兼容性)</span>
+<span class="w">    </span><span class="nx">retryCount?</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w">   </span><span class="c1">// 重试次数</span>
+<span class="w">    </span><span class="nx">priority</span><span class="o">?:</span><span class="w"> </span><span class="s1">&#39;high&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;normal&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;low&#39;</span><span class="p">;</span><span class="w"> </span><span class="c1">// 调度优先级</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// --- 数据区 ---</span>
+<span class="w">  </span><span class="c1">// 实际的业务负载，必须是 Plain JSON Object</span>
+<span class="w">  </span><span class="nx">payload</span><span class="o">:</span><span class="w"> </span><span class="kt">T</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="212-payload">2.1.2 关键 Payload 定义详解</h4>
+<p><strong>A. 用户多模态输入 (User Input)</strong></p>
+<p>实时 Agent 的输入远不止文本。我们需要处理流式的音频、打断信号以及非语言的 UI 交互。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// 文本输入</span>
+<span class="kd">interface</span><span class="w"> </span><span class="nx">TextPayload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">isFinal</span><span class="o">:</span><span class="w"> </span><span class="kt">boolean</span><span class="p">;</span><span class="w"> </span><span class="c1">// 用于流式 ASR 的中间结果 (partial results)</span>
+<span class="p">}</span>
+
+<span class="c1">// 音频片段 (用于 VAD 和 ASR)</span>
+<span class="kd">interface</span><span class="w"> </span><span class="nx">AudioChunkPayload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">format</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;pcm&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;opus&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">sampleRate</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// Base64 编码的音频帧，或者指向共享内存/S3 的引用</span>
+<span class="w">  </span><span class="nx">sequence</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w"> </span><span class="c1">// 帧序号，防止乱序</span>
+<span class="p">}</span>
+
+<span class="c1">// 意图/控制信号 (Control Signals)</span>
+<span class="kd">interface</span><span class="w"> </span><span class="nx">ControlPayload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;interrupt&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;undo&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;regenerate&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">targetEventId?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// 针对哪个之前的事件进行操作 (e.g., 打断了哪句话)</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>B. 模型生成流 (LLM Generation Stream)</strong></p>
+<p>LLM 输出在 FRP 中通常被拆解为细粒度的流事件，以便 UI 实现打字机效果并尽早触发工具。</p>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">ModelDeltaPayload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// 增量内容</span>
+<span class="w">  </span><span class="nx">delta</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span>
+
+<span class="w">  </span><span class="c1">// 累积内容 (可选，用于 UI 容错，防止丢包导致乱码)</span>
+<span class="w">  </span><span class="nx">accumulated?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 思考过程 (针对 CoT 模型，如 o1/r1)</span>
+<span class="w">  </span><span class="nx">reasoningDelta?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 当前生成状态</span>
+<span class="w">  </span><span class="nx">status</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;generating&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;function_calling&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 如果触发了工具调用</span>
+<span class="w">  </span><span class="nx">toolCalls</span><span class="o">?:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">argumentsDelta</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// JSON 片段</span>
+<span class="w">  </span><span class="p">}[];</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h3 id="b2-state-schema">B.2 State Schema：确定性的系统快照</h3>
+<p>State 是 Event 流在时间轴上的投影。公式：<code>State(t) = Reducer(InitialState, Events[0...t])</code>。
+设计 State 的核心原则是 <strong>Single Source of Truth（单一事实来源）</strong>。</p>
+<h4 id="221-the-state-tree">2.2.1 状态树结构 (The State Tree)</h4>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">AgentState</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// --- 1. 配置与静态信息 (Config) ---</span>
+<span class="w">  </span><span class="nx">config</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">agentId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">mode</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;chat&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;copilot&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;background&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">modelParams</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">temp</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w"> </span><span class="nx">model</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// --- 2. 记忆与上下文 (Memory) ---</span>
+<span class="w">  </span><span class="c1">// 这部分通常需要持久化到 DB</span>
+<span class="w">  </span><span class="nx">context</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">turnCount</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">messages</span><span class="o">:</span><span class="w"> </span><span class="kt">OpenAICompatibleMessage</span><span class="p">[];</span><span class="w"> </span><span class="c1">// 完整的对话历史</span>
+<span class="w">    </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="kt">Record</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">any</span><span class="o">&gt;</span><span class="p">;</span><span class="w">      </span><span class="c1">// 提取出的实体记忆 (e.g., userName=&quot;Alice&quot;)</span>
+<span class="w">    </span><span class="nx">summary?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">                    </span><span class="c1">// 长对话的摘要</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// --- 3. 运行时瞬态 (Runtime Volatile) ---</span>
+<span class="w">  </span><span class="c1">// 这部分丢失后不影响数据一致性，但影响当前体验</span>
+<span class="w">  </span><span class="nx">runtime</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// 状态机核心状态</span>
+<span class="w">    </span><span class="nx">lifecycle</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;listening&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;thinking&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;acting&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;speaking&#39;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// 当前正在积累的输入 (比如用户正在说话，VAD 尚未截止)</span>
+<span class="w">    </span><span class="nx">inputBuffer</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">transcript</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">audioEnergy</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w"> </span><span class="c1">// 用于 UI 绘制波形</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="c1">// 当前 LLM 正在生成的草稿</span>
+<span class="w">    </span><span class="nx">outputBuffer</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">currentToolCall</span><span class="o">?:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="nx">args</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="c1">// 待处理的副作用 (Pending Effects)</span>
+<span class="w">    </span><span class="c1">// 记录发出了哪些请求但还没收到回执，用于处理超时和取消</span>
+<span class="w">    </span><span class="nx">pendingEffects</span><span class="o">:</span><span class="w"> </span><span class="kt">Record</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kr">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;tool&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;retrieval&#39;</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">startedAt</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">timeoutAt</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// --- 4. 诊断与预算 (Diagnostics) ---</span>
+<span class="w">  </span><span class="nx">diagnostics</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">lastError</span><span class="o">?:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="nx">msg</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="nx">timestamp</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="nx">tokenUsage</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sessionTotal</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">lastTurn</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">budgetRemaining</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="nx">latency</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">lastP99</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">  </span><span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="ascii">ASCII 图解：状态的层级</h4>
+<div class="codehilite"><pre><span></span><code>Root State
+├── Config (Read-onlyish)
+│   └── &quot;Mode: Strict&quot;
+├── Context (Persistent)
+│   ├── Msg[0]: User &quot;Hi&quot;
+│   ├── Msg[1]: Bot &quot;Hello&quot;
+│   └── Vars: { &quot;city&quot;: &quot;Beijing&quot; }
+└── Runtime (Transient)
+    ├── Lifecycle: &quot;Thinking&quot;
+    ├── InputBuffer: (empty)
+    └── PendingEffects
+        └── Tool: &quot;WeatherAPI&quot; (id: req_123, status: sent)
+</code></pre></div>
+
+<hr />
+<h3 id="b3-toolreceipt-schema">B.3 ToolReceipt Schema：双重视图协议</h3>
+<p>这是构建 <strong>Agentic UI</strong> 的关键。Tool/API 的返回值不能只是给 LLM 看的字符串，必须包含给 UI 渲染用的结构化数据。</p>
+<h4 id="231-receipt">2.3.1 Receipt 结构设计</h4>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">ToolReceipt</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// --- 关联信息 ---</span>
+<span class="w">  </span><span class="nx">callId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">        </span><span class="c1">// 对应 LLM tool_call 的 ID</span>
+<span class="w">  </span><span class="nx">toolName</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">      </span><span class="c1">// 工具名称</span>
+<span class="w">  </span><span class="nx">timestamp</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">     </span><span class="c1">// 执行完成时间</span>
+
+<span class="w">  </span><span class="c1">// --- 执行结果状态 ---</span>
+<span class="w">  </span><span class="nx">status</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;success&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;timeout&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;skipped&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// --- 视图 1: 给 LLM 看 (Compact View) ---</span>
+<span class="w">  </span><span class="c1">// 目标：最小化 Token 消耗，传递核心逻辑事实</span>
+<span class="w">  </span><span class="c1">// 示例: &quot;Stock AAPL is 150.00 (+1.2%)&quot;</span>
+<span class="w">  </span><span class="nx">systemContent</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span>
+
+<span class="w">  </span><span class="c1">// --- 视图 2: 给用户看 (Rich View) ---</span>
+<span class="w">  </span><span class="c1">// 目标：提供最佳交互体验，由 UI 组件库解析</span>
+<span class="w">  </span><span class="c1">// 示例: { type: &quot;stock_card&quot;, data: { symbol: &quot;AAPL&quot;, chart: [...] } }</span>
+<span class="w">  </span><span class="nx">uiContent</span><span class="o">?:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">viewType</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">    </span><span class="c1">// 前端根据此字段选择组件</span>
+<span class="w">    </span><span class="nx">title?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">payload</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">;</span><span class="w">        </span><span class="c1">// 具体的 JSON 数据</span>
+<span class="w">    </span><span class="nx">interactions</span><span class="o">?:</span><span class="w"> </span><span class="p">{</span><span class="w">     </span><span class="c1">// 允许用户直接在结果上操作</span>
+<span class="w">      </span><span class="nx">label</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">actionId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">  </span><span class="c1">// 点击后触发新的 Event</span>
+<span class="w">    </span><span class="p">}[];</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// --- 视图 3: 给开发者看 (Debug View) ---</span>
+<span class="w">  </span><span class="nx">debugInfo</span><span class="o">?:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">rawRequest</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">;</span><span class="w">     </span><span class="c1">// 原始 HTTP 请求</span>
+<span class="w">    </span><span class="nx">rawResponse</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">;</span><span class="w">    </span><span class="c1">// 原始 HTTP 响应</span>
+<span class="w">    </span><span class="nx">latencyMs</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">costCurrency</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// --- 错误详情 (当 status != success) ---</span>
+<span class="w">  </span><span class="nx">error</span><span class="o">?:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">        </span><span class="c1">// e.g., &quot;rate_limit_exceeded&quot;</span>
+<span class="w">    </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">     </span><span class="c1">// 人类可读</span>
+<span class="w">    </span><span class="nx">isRetryable</span><span class="o">:</span><span class="w"> </span><span class="kt">boolean</span><span class="p">;</span><span class="w"> </span><span class="c1">// 是否建议 Agent 重试</span>
+<span class="w">    </span><span class="nx">suggestion?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">  </span><span class="c1">// 给 LLM 的修复建议</span>
+<span class="w">  </span><span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h3 id="b4-trace-schema">B.4 Trace Schema：异步因果链</h3>
+<p>在流式系统中，<code>Function A</code> 调用 <code>Function B</code> 的传统堆栈并不存在。存在的是 <code>Event A</code> 触发了 <code>Effect B</code>，<code>Effect B</code> 产生了 <code>Event C</code>。我们需要记录这种<strong>因果链（Causality）</strong>。</p>
+<h4 id="241-span-link">2.4.1 Span 与 Link</h4>
+<p>基于 OpenTelemetry 语义的简化版：</p>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">TraceSpan</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">traceId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">       </span><span class="c1">// 全局会话 ID</span>
+<span class="w">  </span><span class="nx">spanId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">        </span><span class="c1">// 当前操作 ID</span>
+<span class="w">  </span><span class="nx">parentSpanId?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// 父操作 ID</span>
+
+<span class="w">  </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">          </span><span class="c1">// e.g., &quot;executor.run_tool&quot;</span>
+<span class="w">  </span><span class="nx">kind</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;PRODUCER&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;CONSUMER&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;INTERNAL&#39;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="nx">startTime</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">endTime?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 关键：将 Trace 与 Event 绑定</span>
+<span class="w">  </span><span class="nx">links</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">triggerEventId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// 哪个 Event 开启了这个 Span</span>
+<span class="w">    </span><span class="nx">resultEventIds</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">[];</span><span class="w"> </span><span class="c1">// 这个 Span 产出了哪些 Event</span>
+<span class="w">  </span><span class="p">}[];</span>
+
+<span class="w">  </span><span class="c1">// 属性与指标</span>
+<span class="w">  </span><span class="nx">attributes</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;llm.model&quot;</span><span class="nx">?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">    </span><span class="s2">&quot;llm.input_tokens&quot;</span><span class="nx">?</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="s2">&quot;tool.name&quot;</span><span class="nx">?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">    </span><span class="s2">&quot;error.type&quot;</span><span class="nx">?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">  </span><span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>协议先行</strong>：在写一行代码之前，先确定 Event 和 State 的 JSON Schema。</li>
+<li><strong>信封模式</strong>：使用统一的 Event Envelope，包含 <code>id</code>, <code>type</code>, <code>timestamp</code>, <code>meta</code>，将业务数据隔离在 <code>payload</code> 中。</li>
+<li><strong>状态分离</strong>：区分持久化的 <code>Context</code>（存 DB）和瞬态 <code>Runtime</code>（存内存/Redis），避免不必要的 I/O 开销。</li>
+<li><strong>回执分层</strong>：ToolReceipt 必须明确区分 <code>systemContent</code>（给 AI 省 Token）和 <code>uiContent</code>（给人类看效果）。</li>
+<li><strong>不可变性</strong>：Event 是历史事实，不可变更；State 是衍生结果，可随时重算。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<ol>
+<li><strong>JSON 设计</strong>：请设计一个 <code>TimerEvent</code> 的 Payload，用于触发 Agent 的定时任务（比如每 5 分钟提醒一次）。需要包含哪些字段来防止任务堆积？</li>
+<li><strong>State 拆解</strong>：如果 Agent 支持“用户正在输入时展示波形动画”，这个波形的振幅数据（<code>amplitude</code>）应该放在 <code>AgentState</code> 的哪个部分？为什么不应该放在 <code>Context</code> 里？</li>
+<li><strong>Receipt 转换</strong>：一个查询数据库的工具返回了 100 条 SQL 记录。请写出它的 <code>ToolReceipt</code>，要求 <code>systemContent</code> 只包含前 3 条摘要，而 <code>uiContent</code> 包含分页浏览所需的数据。</li>
+</ol>
+<h3 id="_2">挑战题</h3>
+<ol start="4">
+<li><strong>Schema 演进与向后兼容</strong>：<ul>
+<li>场景：系统上线半年后，你需要将 <code>ToolReceipt</code> 中的 <code>uiContent</code> 字段从简单的 JSON 对象改为支持多 Tab 的数组结构 <code>uiTabs: []</code>。</li>
+<li>问题：如何修改 Schema 定义，使得旧版本的日志（包含 <code>uiContent</code>）在回放（Replay）时仍然能被新版代码正确处理？请给出“Upcasting（向上转型）”的伪代码逻辑。</li>
+</ul>
+</li>
+<li><strong>隐私与审计</strong>：<ul>
+<li>场景：你的 Agent 被部署在医疗场景，所有 <code>Event</code> 都会被持久化。</li>
+<li>问题：如何在 Schema 层面设计一种机制，使得我们既能保留 Debug 所需的链路信息（如发生错误的工具参数），又能确保不存储用户的 PII（敏感个人信息，如病历号、姓名）？提示：考虑 Crypto-shredding 或影子字段。</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h3 id="_3">参考答案</h3>
+<details>
+<summary><strong>点击展开参考答案</strong></summary>
+<h4 id="_4">基础题</h4>
+<ol>
+<li><strong>TimerEvent 设计</strong>：</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">TimerPayload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">taskId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">        </span><span class="c1">// 任务定义的唯一标识</span>
+<span class="w">  </span><span class="nx">scheduledTime</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="c1">// 计划执行时间</span>
+<span class="w">  </span><span class="nx">actualTime</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w">    </span><span class="c1">// 实际触发时间</span>
+<span class="w">  </span><span class="nx">missedTicks</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w">   </span><span class="c1">// 如果系统卡顿，错过了多少次 tick (用于背压处理)</span>
+<span class="w">  </span><span class="nx">isRecurring</span><span class="o">:</span><span class="w"> </span><span class="kt">boolean</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="o">*</span><span class="w">   </span><span class="o">*</span><span class="n">Hint</span><span class="o">*:</span><span class="w"> </span><span class="n n-Quoted">`missedTicks`</span><span class="w"> </span><span class="n">很重要，如果积压太多，策略层可以选择丢弃或合并执行。</span>
+</code></pre></div>
+
+<ol start="2">
+<li>
+<p><strong>波形数据位置</strong>：</p>
+<ul>
+<li><strong>位置</strong>：<code>state.runtime.inputBuffer</code> 或单独的 <code>state.ui.ephemeral</code>。</li>
+<li><strong>原因</strong>：这是高频、易变、无业务含义的数据。放入 <code>Context</code> 会导致数据库写入爆炸，且该数据在会话结束后无价值。甚至可以不进主 State，直接由前端处理，除非后端需要基于音量做 VAD 逻辑。</li>
+</ul>
+</li>
+<li>
+<p><strong>DB 查询 Receipt</strong>：</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;toolName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;query_users&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;systemContent&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Found 100 users. Top 3: Alice, Bob, Charlie. (Data truncated, ask specifically to filter)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;uiContent&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;viewType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data_table&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;role&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="err">...</span><span class="mi">100</span><span class="w"> </span><span class="err">records...</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="c1">// 前端负责分页</span>
+<span class="w">      </span><span class="nt">&quot;pageSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="_5">挑战题</h4>
+<ol start="4">
+<li><strong>Schema 演进 (Upcasting)</strong>：<ul>
+<li><strong>思路</strong>：在数据进入 Reducer 之前，通过一个 <code>Upcaster</code> 层将旧数据标准化为新数据。</li>
+<li><strong>伪代码</strong>：</li>
+</ul>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">upcastEvent</span><span class="p">(</span><span class="nx">rawEvent</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nx">AgentEvent</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// 假设旧版 schemaVersion 为 1 或 undefined</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">rawEvent</span><span class="p">.</span><span class="nx">v</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">rawEvent</span><span class="p">.</span><span class="nx">v</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">rawEvent</span><span class="p">.</span><span class="kr">type</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;tool.result&#39;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">rawEvent</span><span class="p">.</span><span class="nx">payload</span><span class="p">.</span><span class="nx">uiContent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="c1">// 迁移逻辑：把旧的单一对象包进新的 Tabs 数组</span>
+<span class="w">      </span><span class="nx">rawEvent</span><span class="p">.</span><span class="nx">payload</span><span class="p">.</span><span class="nx">uiTabs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">        </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Result&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="kt">rawEvent.payload.uiContent</span>
+<span class="w">      </span><span class="p">}];</span>
+<span class="w">      </span><span class="ow">delete</span><span class="w"> </span><span class="nx">rawEvent</span><span class="p">.</span><span class="nx">payload</span><span class="p">.</span><span class="nx">uiContent</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="nx">rawEvent</span><span class="p">.</span><span class="nx">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2</span><span class="p">;</span><span class="w"> </span><span class="c1">// 标记升级完成</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">rawEvent</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<ol start="5">
+<li><strong>隐私保护 Schema</strong>：<ul>
+<li><strong>方案</strong>：在 Schema 中分离 <code>Data</code> 和 <code>References</code>。敏感数据加密存储在专用 Vault，日志中只存指针。</li>
+<li><strong>Schema 示例</strong>：</li>
+</ul>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">SensitivePayload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// 原始字段（在落盘日志前被擦除/哈希化）</span>
+<span class="w">  </span><span class="nx">userInput?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span>
+
+<span class="w">  </span><span class="c1">// 脱敏后的用于分析的特征</span>
+<span class="w">  </span><span class="nx">msgLength</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">intentCategory</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 指向加密保险箱的引用 (仅供最高权限 Debug 使用)</span>
+<span class="w">  </span><span class="nx">secureRef</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;vault://users/123/logs/abc-xyz&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="o">*</span><span class="w">   </span><span class="o">*</span><span class="n">机制</span><span class="o">*</span><span class="n">：Logger</span><span class="w"> </span><span class="n">中间件在序列化前，检测</span><span class="w"> </span><span class="n">PII</span><span class="w"> </span><span class="n">字段，将其替换为</span><span class="w"> </span><span class="n n-Quoted">`***`</span><span class="w"> </span><span class="n">或生成</span><span class="w"> </span><span class="n n-Quoted">`secureRef`</span><span class="n">，确保普通日志文件中不含明文。</span>
+</code></pre></div>
+
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="51-fat-event">5.1 "Fat Event" 综合症</h3>
+<ul>
+<li><strong>错误</strong>：在 <code>Event</code> 中携带巨大的二进制数据（如 10MB 的 PDF 文件内容）。</li>
+<li><strong>后果</strong>：序列化/反序列化阻塞主线程，网络带宽耗尽，日志存储成本激增。</li>
+<li><strong>Rule of Thumb</strong>：<strong>Payload 应该只包含元数据和引用</strong>。文件内容应上传到 S3/Blob Storage，Event 中只传 <code>fileUrl</code> 或 <code>blobId</code>。</li>
+</ul>
+<h3 id="52-ui-state-business-state">5.2 混淆 UI State 与 Business State</h3>
+<ul>
+<li><strong>错误</strong>：在 <code>AgentState</code> 中存储 <code>isMenuOpen: boolean</code> 或 <code>hoverIndex: number</code>。</li>
+<li><strong>后果</strong>：后端逻辑被前端交互细节污染。当从 Web 迁移到 语音助手（无屏幕）时，这些状态变得毫无意义且难以维护。</li>
+<li><strong>修正</strong>：<code>AgentState</code> 只存储<strong>业务意图</strong>（如 <code>recommendedActions</code> 列表）。菜单是否打开是前端 View Model 的事，不要传回给 Agent。</li>
+</ul>
+<h3 id="53">5.3 不可序列化的对象</h3>
+<ul>
+<li><strong>错误</strong>：<code>state.dbConnection = new MongoClient(...)</code> 或 <code>event.callback = () =&gt; { ... }</code>。</li>
+<li><strong>后果</strong>：无法保存快照，无法通过网络传输 State，Time Travel Debugging 失效。</li>
+<li><strong>修正</strong>：State 中只存 <code>connectionStatus: 'connected'</code>。具体的连接实例由 Runtime 的 <code>EffectManager</code> 在闭包中维护，不暴露给纯逻辑层。</li>
+</ul>
+<h3 id="54-versioning">5.4 缺乏版本号 (Versioning)</h3>
+<ul>
+<li><strong>错误</strong>：直接修改 Event 结构而不加 <code>version</code> 字段。</li>
+<li><strong>后果</strong>：上线新版后，旧的客户端发来的事件导致后端 Crash；或者回放旧日志时报错。</li>
+<li><strong>Rule of Thumb</strong>：所有持久化的数据结构（State/Event）都应包含 <code>schemaVersion</code> 字段。</li>
+</ul>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter18.html" class="nav-link prev">← Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</a><a href="chapter20.html" class="nav-link next">Appendix C｜测试方法：虚时间、回放与混沌工程 →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

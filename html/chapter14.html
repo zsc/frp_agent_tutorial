@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-14-ui-debug">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</h1>
+<h2 id="1-perception-is-reality">1. 开篇：感知即真相 (Perception is Reality)</h2>
+<p>在实时 Agent 系统中，后台的强大逻辑如果不能以低延迟、直观的方式传递给用户，那么系统的价值将大打折扣。对于用户而言，Agent <strong>是</strong>他们在 UI 上看到的文字流、听到的声音反馈以及感受到的震动。</p>
+<p>FRP（函数式响应编程）不仅是后台逻辑的组织方式，更是构建<strong>反应式 UI（Reactive UI）</strong>的最佳范式。本章我们将探讨如何将后台的 <code>EventStream</code> 和 <code>StateSignal</code> 转换为像素、声波和触觉反馈。</p>
+<p>更进一步，当 Agent 变得越来越像一个“活体”时（并发思考、工具调用、自我修正），传统的 <code>print</code> 日志调试已经失效。我们需要构建一个可视化的<strong>时空调试器（Space-Time Debugger）</strong>，让开发者能够“看见”时间的流动和逻辑的因果。</p>
+<p><strong>学习目标</strong>：</p>
+<ol>
+<li>掌握 <strong>UI as a Projection</strong>（UI 即投影）的设计模式。</li>
+<li>解决流式文本输出中的<strong>视觉抖动</strong>与<strong>排版闪烁</strong>问题。</li>
+<li>设计一套基于事件的<strong>多感官反馈系统</strong>（Soundscapes &amp; Haptics）。</li>
+<li>构建分层级的<strong>可解释性面板</strong>：对用户展示意图，对开发者展示瀑布流。</li>
+<li>打造基于 FRP DAG 的<strong>可视化调试后台</strong>。</li>
+</ol>
+<hr />
+<h2 id="2">2. 核心论述</h2>
+<h3 id="21-ui-model-view-intent-mvi">2.1 UI 也是反应式：Model-View-Intent (MVI)</h3>
+<p>在传统的 MVC/MVVM 中，我们常因手动管理状态同步而陷入泥潭。在 FRP 架构下，我们推荐 <strong>MVI (Model-View-Intent)</strong> 或单向数据流模式。</p>
+<p>UI 组件被视为一个“纯函数”，它接受状态流，输出虚拟 DOM；同时它也是事件的生产者（Intent）。</p>
+<div class="codehilite"><pre><span></span><code>       [ User Interactions ] (Clicks, Voice, Gestures)
+                 |
+                 v
+        ( Intent / Event Stream )
+                 |
+      [ FRP Core / Business Logic ] &lt;---( Time, Tools, LLM )
+                 |
+                 v
+          ( State Signal ) 
+      +----------+----------+
+      |          |          |
+[ Visual UI ] [ Audio ] [ Haptics ]
+</code></pre></div>
+
+<p><strong>关键原则</strong>：</p>
+<ul>
+<li><strong>UI 不维护逻辑状态</strong>：如果 UI 显示“正在录音”，不是因为用户按下了按钮 UI 自己变红了，而是因为后台状态 <code>isRecording</code> 变成了 <code>true</code>。</li>
+<li><strong>全量 vs 增量</strong>：对于复杂 UI，推荐混合模式。<ul>
+<li><strong>Base State</strong>：低频更新（如对话列表、用户配置），使用全量快照。</li>
+<li><strong>Ephemeral State</strong>：高频更新（如 Token 流、音量波形），使用增量流直接驱动组件。</li>
+</ul>
+</li>
+</ul>
+<h3 id="22-token">2.2 流式输出呈现：驯服“狂躁”的 Token</h3>
+<p>LLM 的 Token 生成速度极快且不稳定（Burst）。直接渲染原始流会造成极差的阅读体验。</p>
+<h4 id="221-visual-stabilizer">2.2.1 视觉稳定器 (Visual Stabilizer)</h4>
+<p>我们需要在 FRP 管道中插入一个中间层，专门处理“人类阅读舒适度”。</p>
+<div class="codehilite"><pre><span></span><code>RawTokenStream 
+   -&gt; [Buffer(50ms)]             // 1. 降低渲染帧率，避免过度重绘
+   -&gt; [MarkdownParser]           // 2. 结构检测
+   -&gt; [LayoutStabilizer]         // 3. 防止高度抖动
+   -&gt; [TypewriterEffect]         // 4. 平滑补间
+   -&gt; UI
+</code></pre></div>
+
+<p><strong>核心策略</strong>：</p>
+<ol>
+<li><strong>Markdown 完整性保护</strong>：<ul>
+<li>当 Token 流输出 <code>**</code> (加粗开始) 但未闭合时，解析器通常会把后续所有文字加粗。</li>
+<li><strong>FRP 解法</strong>：维护一个 <code>StyleStack</code>。如果流结束时栈不为空，自动补全闭合标签，或者<strong>暂时</strong>以纯文本显示这部分内容，直到闭合标签到来再渲染样式。</li>
+</ul>
+</li>
+<li><strong>代码块防抖</strong>：<ul>
+<li>遇到 <code>`</code> 时，<strong>挂起（Hold）</strong>渲染流。</li>
+<li>直到收到 <code>```\n</code> 确认为代码块，或确认为普通字符，再一次性放出。</li>
+</ul>
+</li>
+<li><strong>排版锚定 (Scroll Anchoring)</strong>：<ul>
+<li>当新内容推高了页面高度时，如果用户正在向上查看历史消息，<strong>不要</strong>强制滚动到底部。</li>
+<li>只有当用户视口在底部（IsAtBottom）时，才跟随流式输出自动滚动。</li>
+</ul>
+</li>
+</ol>
+<h4 id="222-ghost-text">2.2.2 幽灵文本 (Ghost Text) 与投机可视化</h4>
+<p>在 Chapter 8 的投机执行中，Agent 可能正在预生成 3 个版本的回答。</p>
+<ul>
+<li><strong>UI 表现</strong>：可以用浅灰色（Opacity 0.5）显示高置信度的投机内容。</li>
+<li><strong>接受/拒绝动画</strong>：<ul>
+<li><strong>Accepted</strong>：幽灵文本变为实体黑色（渐变过渡）。</li>
+<li><strong>Rejected</strong>：幽灵文本出现删除线，然后收缩消失（Collapse），而不是瞬间消失，这样用户能感知到 Agent 在自我纠错。</li>
+</ul>
+</li>
+</ul>
+<h3 id="23">2.3 音效与触觉：设计的“隐形界面”</h3>
+<p>声音设计（Sound Design）是实时 Agent “临场感”的关键。声音不是为了装饰，而是为了<strong>传达不可见的状态</strong>。</p>
+<h4 id="231-sound-mapping">2.3.1 音效映射表 (Sound Mapping)</h4>
+<p>| 事件流 (Event Stream) | 音效类型 (Sound UX) | 喻/设计意图 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">事件流 (Event Stream)</th>
+<th style="text-align: left;">音效类型 (Sound UX)</th>
+<th style="text-align: left;">喻/设计意图</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>VAD: Start</strong></td>
+<td style="text-align: left;">极短的高频 "Pop"</td>
+<td style="text-align: left;">麦克风已开启，"我在听"</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VAD: End</strong></td>
+<td style="text-align: left;">极短的低频 "Click"</td>
+<td style="text-align: left;">录音结束，"收到了"</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>State: Thinking</strong></td>
+<td style="text-align: left;">循环的白噪音/电流声 (极低音量)</td>
+<td style="text-align: left;">正在处理，"别急，没死机"</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Effect: Tool Call</strong></td>
+<td style="text-align: left;">机械咬合声 / 键盘敲击声</td>
+<td style="text-align: left;">正在操作外部世界</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Effect: Tool Done</strong></td>
+<td style="text-align: left;">清脆的 "Ding" (成功) / 低沉 "Buzzer" (失败)</td>
+<td style="text-align: left;">操作结果反馈</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>LLM: Start Talk</strong></td>
+<td style="text-align: left;">(淡出 Thinking 音效)</td>
+<td style="text-align: left;">夺回对话主导权</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>User: Interrupt</strong></td>
+<td style="text-align: left;">磁带急停 / 划痕声</td>
+<td style="text-align: left;">强行打断，确认收到停止指令</td>
+</tr>
+</tbody>
+</table>
+<h4 id="232">2.3.2 空间音频与管道控制</h4>
+<ul>
+<li><strong>Ducking (闪避)</strong>：当 <code>TTS Stream</code> 活跃时，所有其他音效（环境音、Thinking 音效）的音量应通过 FRP 的 <code>combineLatest</code> 算子自动压低至 20%。</li>
+<li><strong>并发控制</strong>：短时间内（100ms）连续触发的同一音效（如连续 Token 生成），应通过 <code>throttle</code> 限制播放频率，或使用 <strong>Pitch Shifting</strong>（音调微升）来创造“进度感”。</li>
+</ul>
+<h3 id="24">2.4 “发生了什么”面板：透明度分级</h3>
+<p>用户不信任黑盒，但也不想看 StackTrace。我们需要构建分层级的<strong>UI 解释器</strong>。</p>
+<p><strong>Level 1: 沉浸态 (Immersive)</strong></p>
+<ul>
+<li>只显示头像动画（根据 VAD/TTS 音量律动）。</li>
+<li>极简的文字提示：“正在查阅日历...”。</li>
+</ul>
+<p><strong>Level 2: 摘要态 (Thought Bubble)</strong></p>
+<ul>
+<li>这是一个可展开的气泡。</li>
+<li>显示关键步骤：<code>规划行程</code> -&gt; <code>调用天气 API</code> -&gt; <code>检查库存</code> -&gt; <code>生成回复</code>。</li>
+<li><strong>引用归因 (Attribution)</strong>：当 TTS 读到“明天有雨”时，UI 应该高亮对应的“天气 API 回执”卡片。这需要 TTS 的 Alignment 信息（Word-level timestamps）与 RAG 来源 ID 进行绑定。</li>
+</ul>
+<p><strong>Level 3: 调试态 (Raw Log)</strong></p>
+<ul>
+<li>面向开发者或超级用户。展示完整的 JSON Payload、Token 消耗、Latency 数据。</li>
+</ul>
+<h3 id="25-debug">2.5 后台 Debug 可视化：时空调试器</h3>
+<p>为了调试复杂的竞态条件（Race Conditions），我们需要超越文本日志的可视化工具。</p>
+<h4 id="251-interactive-waterfall">2.5.1 交互式瀑布图 (Interactive Waterfall)</h4>
+<p>横轴为时间，纵轴为并发的“通道（Channel）”。</p>
+<div class="codehilite"><pre><span></span><code>Time (ms) -&gt;  0    100   200   300   400   500   600
+Channel:
+[User Audio]  |=== VAD Active ===|
+[STT Service]                    |== Transcribing ==| &quot;Hello&quot;
+[Orchestrator]                                      | Plan |
+[Tool: Search]                                             |== Network ==|
+[LLM Stream]                                                     | T | o | k | e | n |
+</code></pre></div>
+
+<ul>
+<li><strong>特征</strong>：颜色编码（绿色=成功，红色=失败，黄色=投机中，灰色=被取消）。</li>
+<li><strong>交互</strong>：点击任意色块，侧边栏显示当时的 Context 快照和 Prompt。</li>
+</ul>
+<h4 id="252-state-time-travel">2.5.2 状态时光机 (State Time Travel)</h4>
+<p>利用 FRP 的不可变数据（Immutable Data）特性，我们可以轻松实现时光倒流。</p>
+<ul>
+<li><strong>录制</strong>：在 Debug 模式下，将 Event Bus 上的所有 Event 序列化存储。</li>
+<li><strong>回放</strong>：<ol>
+<li>加载 Event 序列。</li>
+<li>重置 Agent 到初始状态。</li>
+<li>提供一个<strong>滑块 (Slider)</strong>。</li>
+<li>拖动滑块 = <code>reduce(events[0...t], reducer)</code>。</li>
+<li><strong>关键点</strong>：回放时必须 Mock 所有的副作用（Effect）。你不想在回放时真的去给客户发邮件。</li>
+</ol>
+</li>
+</ul>
+<h4 id="253-reactive-graph-visualization">2.5.3 反应图 (Reactive Graph Visualization)</h4>
+<p>直接可视化代码中的流依赖关系（DAG）。</p>
+<ul>
+<li><strong>节点</strong>：Stream / Signal。</li>
+<li><strong>连线</strong>：Operator (Map, Filter, Combine)。</li>
+<li><strong>动态效果</strong>：当数据流过时，线条发光。</li>
+<li><strong>用途</strong>：一眼看出<strong>背压（Backpressure）</strong>发生在哪里。如果某个节点前的连线积压变粗，说明下游消费太慢。</li>
+</ul>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>UI 是投影</strong>：坚持 <code>View = f(State)</code>。UI 组件应保持无状态，完全由 FRP 的 Signal 驱动。</li>
+<li><strong>体验是细节</strong>：流式输出需要防抖和Markdown补全；音效设计需要考虑频率限制和闪避（Ducking）；触觉反馈能增强操确认感。</li>
+<li><strong>透明度建立信任</strong>：通过分层级的 UI（沉浸态/摘要态/调试态）来满足不同用户的可解释性需求。</li>
+<li><strong>调试即回放</strong>：利用 FRP 的事件溯源特性，构建支持“时间旅行”的调试工具，是解决复杂并发 bug 的唯一高效途径。</li>
+<li><strong>可观测性可视化</strong>：瀑布图和反应图能让开发者直观地识别延迟瓶颈和逻辑断路。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<ol>
+<li>
+<p><strong>[UI/CSS]</strong> 编写一个简单的 CSS Keyframes 动画逻辑，用于处理流式文字的光标。</p>
+<ul>
+<li><em>Hint</em>：光标应该只在 <code>AgentStatus == 'generating'</code> 时出现。考虑使用伪元素 <code>::after</code> content: "▋"。</li>
+</ul>
+</li>
+<li>
+<p><strong>[FRP/Sound]</strong> 设计一个 "Thinking Loop" 音效控制器。</p>
+<ul>
+<li><em>输入</em>：<code>isThinking$</code> (boolean stream)。</li>
+<li><em>要求</em>：当变为 <code>true</code> 时，淡入播放循环音效；当变为 <code>false</code> 时，淡出停止。</li>
+<li><em>Hint</em>：使用 <code>switchMap</code> 切换 <code>timer</code> 或音频控制流，配合 <code>tween</code> 或 <code>lerp</code> 算法控制音量。</li>
+</ul>
+</li>
+<li>
+<p><strong>[Data]</strong> 设计一个适合前端展示的 <code>TimelineEvent</code> 数据结构。</p>
+<ul>
+<li><em>要求</em>：包含 id, timestamp, type (user/agent/tool/error), content, relatedIds (引用的证据)。</li>
+</ul>
+</li>
+</ol>
+<h3 id="_2">挑战题</h3>
+<ol start="4">
+<li>
+<p><strong>[Algorithm] 流式 Markdown 补全器</strong></p>
+<ul>
+<li><strong>场景</strong>：输入流为 <code>Hello **Wor</code> (中断)。</li>
+<li><strong>任务</strong>：编写一个函数 <code>stabilize(partialString) -&gt; safeString</code>。</li>
+<li><em>输出</em>：应输出 <code>Hello **Wor**</code>（补全闭合）或者 <code>Hello Wor</code>（暂时去除未闭合标记）。讨论两种策略的优劣。</li>
+<li><em>Hint</em>：使用栈（Stack）来追踪 Markdown 标记。如果栈不为空，生成对应的闭合标签追加到末尾。</li>
+</ul>
+</li>
+<li>
+<p><strong>[Architecture] 全链路取消的 UI 表现</strong></p>
+<ul>
+<li><strong>场景</strong>：用户在 Agent 搜索了一半时点击“停止”。</li>
+<li><strong>任务</strong>：描述 UI、Audio 和 Backend Log 分别应该发生什么？</li>
+<li><em>Hint</em>：<ul>
+<li>Backend: 发出 <code>CancellationSignal</code>，终止 HTTP 请求。</li>
+<li>Log: 记录 <code>Action: Cancelled by User</code>。</li>
+<li>UI: 搜索卡片变为灰色/折叠，显示“已取消”。</li>
+<li>Audio: 播放“磁带停止/刹车”音效，立即切断正在播放的“搜索中”背景音。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>[Visualization] 延迟热力图 (Latency Heatmap)</strong></p>
+<ul>
+<li><strong>场景</strong>：我们需要分析 Agent 在哪个环节最慢。</li>
+<li><strong>任务</strong>：设计一个基于 Canvas 的可视化组件，能够读取 100 次会话的 Trace 数据，并在时间轴上通过颜色深浅显示延迟的分布（TTFT, Tool Latency, Network Latency）。</li>
+<li><em>Hint</em>：X轴是时间，Y轴是不同的阶段（Stage）。颜色深浅代表该阶段在该时刻的耗时百分位数（P99/P50）。</li>
+</ul>
+</li>
+</ol>
+<h3 id="_3">参考答案</h3>
+<details>
+<summary>点击展开答案</summary>
+<ol>
+<li>
+<p><strong>光标动画</strong>:</p>
+<ul>
+<li>CSS: <code>.typing::after { content: '▋'; animation: blink 1s step-end infinite; }</code></li>
+<li>Logic: <code>&lt;div className={status === 'generating' ? 'typing' : ''}&gt;{text}&lt;/div&gt;</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Thinking Loop</strong>:</p>
+<ul>
+<li><code>isThinking$.pipe(switchMap(thinking =&gt; thinking ? fadeIn(sound) : fadeOut(sound)))</code>.</li>
+<li><code>fadeIn</code> 返回一个 Observable，每 10ms 增加音量直到 1.0。<code>fadeOut</code> 同理。</li>
+</ul>
+</li>
+<li>
+<p><strong>TimelineEvent Schema</strong>:</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">TimelineEvent</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">timestamp</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">actor</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;user&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;agent&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;system&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="kr">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;tool_call&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;tool_result&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">;</span><span class="w"> </span><span class="c1">// text or json</span>
+<span class="w">  </span><span class="nx">metadata</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">latency?</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">cost?</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">citations?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">[];</span><span class="w"> </span><span class="c1">// IDs of RAG docs</span>
+<span class="w">  </span><span class="p">};</span>
+<span class="w">  </span><span class="nx">status</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;success&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;failed&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<ol start="4">
+<li>
+<p><strong>Markdown 补全</strong>:</p>
+<ul>
+<li><strong>策略 A (自动补全)</strong>：为了样式稳定，补全闭合标签。优点：布局不跳变；缺点：用户可能会短暂看到不完整的加粗词。</li>
+<li><strong>策略 B (剥离)</strong>：检测到未闭合，直接当作纯文本渲染。优点：内容不出错；缺点：闭合瞬间会发生样式跳变（Flash of Unstyled Content）。</li>
+<li><strong>推荐</strong>：对于代码块（```）使用策略 A（补全闭合，显示空块）；对于行内样式（**）使用策略 B 或 延迟渲染（Buffer直到遇到闭合）。</li>
+</ul>
+</li>
+<li>
+<p><strong>全链路取消</strong>:</p>
+<ul>
+<li>核心是<strong>反馈的即时性</strong>。</li>
+<li>UI 必须在点击瞬间（MouseDown）就给出视觉反馈（按钮变态、Loading 条冻结），不能等后端回包。这叫 <strong>Optimistic UI</strong>。</li>
+<li>音频使用硬切断（Hard Cut）或极快淡出（50ms），配合刹车音效，强化“控制感”。</li>
+</ul>
+</li>
+<li>
+<p><strong>延迟热力图</strong>:</p>
+<ul>
+<li>将每个 Session 的各阶段耗时归一化。</li>
+<li>使用重叠绘制：100 条半透明的线叠加。颜色越深的地方表示该时间段内大多数请求都还在处理中。</li>
+<li>这能直观展示“长尾”（Long Tail）问题——如果有一条淡淡的线拖得很长，说明有偶发的超时。</li>
+</ul>
+</li>
+</ol>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="51-dom">5.1 虚拟 DOM 的性能陷阱</h3>
+<ul>
+<li><strong>错误</strong>：每次收到一个 Token，就触发 React 的全量 Re-render，且组件层级过深。</li>
+<li><strong>现象</strong>：在长文本生成后期，打字速度明显变慢，CPU 占用率飙升，甚至导致浏览器页面无响应。</li>
+<li><strong>修正</strong>：<ol>
+<li><strong>组件隔离</strong>：将正在生成的文本块单独封装为一个组件，使用 <code>React.memo</code> 防止父组件渲染导致无关子组件刷新。</li>
+<li><strong>直接 DOM 操作</strong>：对于极高频更新（如 60fps 的音频波形或超快 Token 流），考虑跳过 React 状态机制，使用 <code>ref</code> 直接操作 DOM 的 <code>innerText</code> 或 <code>canvas</code>，仅在流结束时同步回 React State。</li>
+</ol>
+</li>
+</ul>
+<h3 id="52-audiocontext">5.2 音频上下文 (AudioContext) 的限制</h3>
+<ul>
+<li><strong>错误</strong>：试图在没有用户交互（点击/触摸）的情况下自动播放音频（例如页面加载后的欢迎语）。</li>
+<li><strong>现象</strong>：浏览器控制台报错 "The AudioContext was not allowed to start"，Agent 变成哑巴。</li>
+<li><strong>修正</strong>：<ul>
+<li>遵循浏览器的 <strong>Autoplay Policy</strong>。</li>
+<li>在 UI 上设计一个显式的 "Start / Connect" 按钮。</li>
+<li>在用户的第一次点击事件中，初始化并 <code>resume()</code> 全局的 <code>AudioContext</code>。</li>
+</ul>
+</li>
+</ul>
+<h3 id="53">5.3 调试数据的内存泄漏</h3>
+<ul>
+<li><strong>错误</strong>：为了支持“时光机回放”，无限制地将所有 Event 保存在内存数组中。</li>
+<li><strong>现象</strong>：Agent 运行 1 小时后，浏览器崩溃（OOM）。</li>
+<li><strong>修正</strong>：<ul>
+<li>实现 <strong>Ring Buffer</strong>（环形缓冲区），只保留最近 1000 个事件。</li>
+<li>或者，将旧日志异步持久化到 IndexedDB，内存中只留索引。</li>
+</ul>
+</li>
+</ul>
+<h3 id="54-ui-agent">5.4 混淆“UI 状态”与“Agent 状态”</h3>
+<ul>
+<li><strong>错误</strong>：在 UI 组件里写 <code>const [isThinking, setIsThinking] = useState(false)</code>，然后在点击发送时 <code>setIsThinking(true)</code>。</li>
+<li><strong>后果</strong>：如果网络请求失败，或者 Agent 内部触发了错误，UI 可能会永远卡在 <code>isThinking=true</code>，因为 UI 逻辑和真实的 Agent 内部状态脱节了。</li>
+<li><strong>修正</strong>：UI 永远只应该是 State Signal 的<strong>观察者</strong>。<code>const isThinking = useObservable(agent.state$.map(s =&gt; s.phase === 'thinking'))</code>。UI 永远不要自己猜测状态。</li>
+</ul>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter13.html" class="nav-link prev">← Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</a><a href="chapter15.html" class="nav-link next">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规 →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

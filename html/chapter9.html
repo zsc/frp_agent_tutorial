@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-9dynamic-batching">Chapter 9｜Dynamic Batching &amp; 并发：吞吐、延迟与公平性</h1>
+<h2 id="1">1. 开篇段落</h2>
+<p>在构建生产级 LLM Agent 时，我们很快会撞上一堵墙：<strong>资源与效率的矛盾</strong>。
+单用户的 Demo 往往运行流畅，但当系统扩展，或者单个 Agent 需要在一次交互中调用 5 个工具、检索 20 个文档片段、并同时生成回复时，串行处理会导致延迟（Latency）爆炸。反之，如果不加节制地并发，不仅会瞬间耗尽 API Rate Limit（速率限制），还会因为过多的并发连接导致客户端崩溃。</p>
+<p>本章的核心任务是构建一个<strong>智能流量调度层</strong>。我们将利用 FRP 的流式特性，实现以下目标：</p>
+<ol>
+<li><strong>动态批处理（Dynamic Batching）</strong>：像“拼车”一样，自动合并碎片化请求，利用 LLM/Embedding API 的批量理能力提升吞吐（Throughput）。</li>
+<li><strong>并发控制（Concurrency Control）</strong>：限制同时飞行的请求数量，防止系统过载。</li>
+<li><strong>优先级与公平性（Fairness）</strong>：确保后台的“长考”任务不会阻塞用户的“秒回”需求。</li>
+<li><strong>背压（Backpressure）</strong>：当系统处理不过来时，优雅地丢弃或排队，而不是崩溃。</li>
+</ol>
+<hr />
+<h2 id="2">2. 核心论述</h2>
+<h3 id="21-token">2.1 批处理的对象：不仅是 Token</h3>
+<p>在 Agent 系统中，凡是涉及 <strong>I/O</strong> 和 <strong>昂贵计算</strong> 的环节，都是批处理的潜在客户。我们需要识别出哪些流（Stream）是可以合并的。</p>
+<p>| 场景 | 是否适合 Batch | 理由 | 典型策略 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">场景</th>
+<th style="text-align: left;">是否适合 Batch</th>
+<th style="text-align: left;">理由</th>
+<th style="text-align: left;">典型策略</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Embeddings</strong></td>
+<td style="text-align: left;">⭐⭐⭐⭐⭐ (极佳)</td>
+<td style="text-align: left;">向量数据库和 Embedding API 对批量极度友好。100 条文本发 1 次请求比发 100 次快得多且省配额。</td>
+<td style="text-align: left;"><code>bufferTime(50ms)</code> 或 <code>bufferCount(20)</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Log/Trace</strong></td>
+<td style="text-align: left;">⭐⭐⭐⭐⭐ (极佳)</td>
+<td style="text-align: left;">写入 DB 或观测平台。实时性要求低吞吐要求高。</td>
+<td style="text-align: left;"><code>bufferTime(5s)</code> 或 <code>bufferCount(100)</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tool Calls</strong></td>
+<td style="text-align: left;">⭐⭐⭐ (中等)</td>
+<td style="text-align: left;">若多个工具之间无依赖（如同时查天气和汇率），应并发或合并请求（如果 API 支持）。</td>
+<td style="text-align: left;"><code>zip</code> 或 <code>forkJoin</code> (并发)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Chat Compl</strong></td>
+<td style="text-align: left;">⭐ (较差)</td>
+<td style="text-align: left;">对话通常是线性的。Batch 主要用于 "Speculative Execution"（并发生成多个草稿）。</td>
+<td style="text-align: left;">主要是并发而非合并</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>UI Updates</strong></td>
+<td style="text-align: left;">⭐⭐ (特殊)</td>
+<td style="text-align: left;">避免每生成一个 token 就重绘 DOM。</td>
+<td style="text-align: left;"><code>animationFrame</code> 节流</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-frp">2.2 动态批处理策略：FRP 的时间魔法</h3>
+<p>FRP 的核心优势在于处理“时间窗口”。我们不需要写复杂的 <code>setTimeout</code> 和数组操作，而是使用算子组合来定义“发车机制”。</p>
+<h4 id="a-time-size-race">策略 A：时间与数量的竞争 (Time-Size Race)</h4>
+<p>这是最通用的策略。</p>
+<blockquote>
+<p><strong>Rule of Thumb</strong>: "凑齐 N 个就发车，或者等了 T 毫秒还没凑齐也发车。"</p>
+</blockquote>
+<p>在 FRP 中，这通常表现为 <code>bufferTime</code> 和 <code>bufferCount</code> 的组合，或者更层的 <code>window</code> 操作。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Stream</span><span class="w"> </span><span class="p">(</span><span class="n">Inputs</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="o">--</span><span class="n">a</span><span class="o">---</span><span class="n">b</span><span class="o">-------</span><span class="n">c</span><span class="o">--</span><span class="n">d</span><span class="o">--</span><span class="n">e</span><span class="o">--</span><span class="n">f</span><span class="o">--</span><span class="n">g</span><span class="o">---------&gt;</span>
+<span class="w">                    </span><span class="o">|</span><span class="w">   </span><span class="o">|</span><span class="w">       </span><span class="o">|</span><span class="w">  </span><span class="o">|</span><span class="w">  </span><span class="o">|</span><span class="w">  </span><span class="o">|</span><span class="w">  </span><span class="o">|</span>
+<span class="n">Batcher</span><span class="w"> </span><span class="n">Logic</span><span class="o">:</span><span class="w">    </span><span class="p">[</span><span class="w"> </span><span class="kr">Wait</span><span class="w"> </span><span class="nf">max</span><span class="w"> </span><span class="mi">50</span><span class="n">ms</span><span class="w"> </span><span class="kr">OR</span><span class="w"> </span><span class="nf">max</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="p">]</span>
+<span class="w">                    </span><span class="o">|</span><span class="w">           </span><span class="o">|</span><span class="w">        </span><span class="o">|</span>
+<span class="w">                    </span><span class="n">v</span><span class="w">           </span><span class="n">v</span><span class="w">        </span><span class="n">v</span>
+<span class="kr">Output</span><span class="w"> </span><span class="p">(</span><span class="n">Batches</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="o">--</span><span class="p">[</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">]</span><span class="o">-------</span><span class="p">[</span><span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">e</span><span class="p">]</span><span class="o">--</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">g</span><span class="p">]</span><span class="o">--------&gt;</span>
+<span class="n">Reason</span><span class="o">:</span><span class="w">           </span><span class="n">Timeout</span><span class="w">     </span><span class="kr">Full</span><span class="w">     </span><span class="n">Timeout</span>
+</code></pre></div>
+
+<h4 id="b-adaptive-window">策略 B：自适应窗口 (Adaptive Window)</h4>
+<p>静态窗口（如固定 50ms）在流量波动时不够从容。</p>
+<ul>
+<li><strong>低负载时</strong>：我们希望窗口为 0ms，即时响应。</li>
+<li><strong>高负载时</strong>：我们希望窗口延长（如 200ms），以提高“拼车率”，减少 API 调用次数。</li>
+</ul>
+<p>在 FRP 中，这可以通过<strong>背压反馈</strong>实现：监测当前飞行中（In-flight）的请求数。如果飞行数很少，说明系统空闲，立刻发送；如果飞行数很多，说明系统拥堵，自动增大 buffer 时间。</p>
+<h3 id="23">2.3 优先级调度：多车道模型</h3>
+<p>并非所有事件都生而平等。</p>
+<ul>
+<li><strong>P0 (User Interactive)</strong>: 用户正在盯着屏幕，必须 &lt;200ms 响应。</li>
+<li><strong>P1 (Reasoning)</strong>: 模型中间思考过程，稍慢可接受。</li>
+<li><strong>P2 (Background)</strong>: 异步的记忆整理、日志上传。</li>
+</ul>
+<p>如果我们简单地把所有请求塞进同一个 Batch 队列，P2 的大量日志可能会阻塞 P0 的用户请求（Head-of-Line Blocking）。</p>
+<p><strong>设计模式：多级优先级队列 + 抢占式填充</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">High</span><span class="w"> </span><span class="n">Priority</span><span class="w"> </span><span class="n">Stream</span><span class="w"> </span><span class="p">(</span><span class="n">$H</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="o">--</span><span class="n">H1</span><span class="o">--</span><span class="n">H2</span><span class="o">----------------</span><span class="n">H3</span><span class="o">----&gt;</span>
+<span class="n">Low</span><span class="w"> </span><span class="n">Priority</span><span class="w"> </span><span class="n">Stream</span><span class="w"> </span><span class="p">(</span><span class="n">$L</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="o">--</span><span class="n">L1</span><span class="o">--</span><span class="n">L2</span><span class="o">--</span><span class="n">L3</span><span class="o">--</span><span class="n">L4</span><span class="o">--</span><span class="n">L5</span><span class="o">--</span><span class="n">L6</span><span class="o">-------&gt;</span>
+
+<span class="p">[</span><span class="w"> </span><span class="n">Scheduler</span><span class="w"> </span><span class="n">Logic</span><span class="w"> </span><span class="p">]</span>
+
+<span class="mf">1.</span><span class="w"> </span><span class="n">Check</span><span class="w"> </span><span class="n">$H</span><span class="p">.</span><span class="w"> </span><span class="n">If</span><span class="w"> </span><span class="n">distinct</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="n">exist</span><span class="p">,</span><span class="w"> </span><span class="n">flush</span><span class="w"> </span><span class="n">immediately</span><span class="p">.</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">If</span><span class="w"> </span><span class="n">Batch</span><span class="w"> </span><span class="n">has</span><span class="w"> </span><span class="n">space</span><span class="w"> </span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">$L</span><span class="p">.</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">If</span><span class="w"> </span><span class="n">$H</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">empty</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">$L</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">full</span><span class="p">,</span><span class="w"> </span><span class="n">flush</span><span class="w"> </span><span class="n">$L</span><span class="p">.</span>
+
+<span class="n">Output</span><span class="w"> </span><span class="n">Batch</span><span class="w"> </span><span class="n">Stream</span><span class="o">:</span>
+<span class="n">Batch</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="n">H1</span><span class="p">,</span><span class="w"> </span><span class="n">H2</span><span class="p">,</span><span class="w"> </span><span class="n">L1</span><span class="p">,</span><span class="w"> </span><span class="n">L2</span><span class="p">]</span><span class="w"> </span><span class="p">(</span><span class="n">H</span><span class="w"> </span><span class="n">triggered</span><span class="w"> </span><span class="n">flush</span><span class="p">,</span><span class="w"> </span><span class="n">L</span><span class="w"> </span><span class="n">piggybacked</span><span class="p">)</span>
+<span class="n">Batch</span><span class="w"> </span><span class="mi">2</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="n">L3</span><span class="p">,</span><span class="w"> </span><span class="n">L4</span><span class="p">,</span><span class="w"> </span><span class="n">L5</span><span class="p">,</span><span class="w"> </span><span class="n">L6</span><span class="p">]</span><span class="w"> </span><span class="p">(</span><span class="n">L</span><span class="w"> </span><span class="n">triggered</span><span class="w"> </span><span class="n">flush</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">size</span><span class="o">/</span><span class="n">time</span><span class="p">)</span>
+<span class="n">Batch</span><span class="w"> </span><span class="mi">3</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="n">H3</span><span class="p">]</span><span class="w">             </span><span class="p">(</span><span class="n">H</span><span class="w"> </span><span class="n">triggered</span><span class="w"> </span><span class="n">flush</span><span class="p">)</span>
+</code></pre></div>
+
+<p>这种模式在 FRP 中通常通过合并多个流（<code>merge</code>），但给每个事件打上 <code>priority</code> 标签，并在 buffer 的 closing selector 中加入逻辑来实现。</p>
+<h3 id="24-backpressure">2.4 背压与流控 (Backpressure)</h3>
+<p>当 LLM 的生成速度只有 50 tokens/s，而工具产生数据的速度是 500 items/s 时，系统必须进行流控，否则内存会爆（OOM）。</p>
+<p>FRP 提供了三大流控原语，对应不同的业务场景：</p>
+<ol>
+<li>
+<p><strong>Lossy (有损) - Throttle / Debounce / Audit</strong></p>
+<ul>
+<li><strong>场景</strong>：用户快速拖动进度条、VAD 音量检测、UI 渲染。</li>
+<li><strong>逻辑</strong>：只保留时间窗口内的第一个或最后一个，丢弃中间的。</li>
+<li><strong>代价</strong>：丢失中间状态。</li>
+</ul>
+</li>
+<li>
+<p><strong>Lossless (无损) - Buffer / Queue</strong></p>
+<ul>
+<li><strong>场景</strong>：日志、计费 Token 统计。</li>
+<li><strong>逻辑</strong>：全部存入内存队列，慢慢消费。</li>
+<li><strong>风险</strong>：如果生产持续 &gt; 消费，队列无限增长导致 Crash。需要设置 <strong>High Watermark（高水位）</strong>，超过水位则强制丢弃或报错。</li>
+</ul>
+</li>
+<li>
+<p><strong>Switching (切换) - switchLatest</strong></p>
+<ul>
+<li><strong>场景</strong>：RAG 检索、对话生成</li>
+<li><strong>逻辑</strong>：<strong>"喜新厌旧"</strong>。当新的请求（Intent）到来时，如果旧的请求还没处理完，直接<strong>取消</strong>旧请求。</li>
+<li><strong>价值</strong>：这是 Agent 响应速度感知的关键。用户改口时，Agent 应立即停止上一句的推理。</li>
+</ul>
+</li>
+</ol>
+<h3 id="25-concurrency-limiting-bulkhead">2.5 并发限制 (Concurrency Limiting / Bulkhead)</h3>
+<p>为了防止 Agent 将后端服务（如 Docker 容器、数据库连接池）打挂，我们需要限制并发度。
+FRP 的 <code>mergeMap</code> (或 <code>flatMap</code>) 算子通常带有一个 <code>concurrency</code> 参数。</p>
+<ul>
+<li><code>mergeMap(handler, concurrency=5)</code>: 同时最多处理 5 个内部流。第 6 个事件到来时，会被暂时挂起（Pending），直到前 5 个中有 1 个完成。</li>
+</ul>
+<p><strong>舱壁模式 (Bulkhead Pattern)</strong>：
+不要让一个耗时的工具（如图像生成）占满所有并发槽位，导致轻量级的工具（如计算器）无法执行。</p>
+<ul>
+<li>应该为不同类型的任务建立独立的“泳道”：<ul>
+<li><code>ImageGenStream</code>: maxConcurrency = 1</li>
+<li><code>WebSearchStream</code>: maxConcurrency = 5</li>
+<li><code>CodeExecStream</code>: maxConcurrency = 2</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ol>
+<li><strong>Batching 是 IO 密集型任务的救星</strong>：对 Embedding 和 Log 务必使用 Batch，对 LLM 推理慎用。</li>
+<li><strong>FRP 是实现 Batching 的最佳 DSL</strong>：通过 <code>buffer</code>、<code>window</code>、<code>debounce</code> 等算子的声明式组合，替代了复杂的定时器状态机。</li>
+<li><strong>优先级队列</strong>：利用“顺风车”机制，让低优先级任务利用高优先级任务的 Batch 剩余空间，既保证了延迟又提升了吞吐。</li>
+<li><strong>背压显性化</strong>：不要假设系统能处理无限速率的输入。明确你的 Agent 在过载时是选择“丢弃”、“排队”还是“覆盖”。</li>
+<li><strong>隔离并发</strong>：使用舱壁模式（Bulkhead）防止某个慢工具拖垮整个 Agent 的响应能力。</li>
+</ol>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<p><strong>Q1. 算子行为预测</strong>
+给定输入流事件（时间点:值）：<code>0ms:A</code>, <code>10ms:B</code>, <code>40ms:C</code>, <code>60ms:D</code>, <code>90ms:E</code>。
+请描述以下三种配置的输出 Batch：</p>
+<ol>
+<li><code>bufferTime(50ms)</code></li>
+<li><code>bufferCount(2)</code></li>
+<li><code>buffer(debounceTime(30ms))</code> (提示：debounce 在静默 30ms 后触发)</li>
+</ol>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ol>
+<li><strong>bufferTime(50ms)</strong>:<ul>
+<li>T=50ms: 输出 <code>[A, B, C]</code> (0, 10, 40 都在 0-50 区间)</li>
+<li>T=100ms: 输出 <code>[D, E]</code> (60, 90 都在 50-100 区间)</li>
+</ul>
+</li>
+<li><strong>bufferCount(2)</strong>:<ul>
+<li>T=10ms (B到达): 输出 <code>[A, B]</code></li>
+<li>T=60ms (D到达): 输出 <code>[C, D]</code></li>
+<li>E 还在缓冲区等待下一个伙伴。</li>
+</ul>
+</li>
+<li><strong>buffer(debounceTime(30ms))</strong>:<ul>
+<li>A(0) -&gt; wait 30? No, B(10) came. Reset timer.</li>
+<li>B(10) -&gt; wait 30? Yes, at 40ms C came. Reset timer? (注意：Debounce 行为取决于具体实现，通常 C 的到来会重置 B 的计时)。</li>
+<li>假设标准 debounce：<ul>
+<li>A(0)..B(10)..C(40)..D(60)..E(90).. -&gt; 120ms (90+30) 没有任何新事件。</li>
+<li>输出 <code>[A, B, C, D, E]</code> 在 T=120ms。这是一个陷阱题，debounce 适合做“输入停止检测”，如果不停止，它会一直攒着。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</details>
+<p><strong>Q2. 场景选择</strong>
+在以下场景中，你会选择 Drop (丢弃)、Queue (排队) 还是 Latest (最新) 策略？</p>
+<ol>
+<li>Agent 正在朗读长文本，用户不停点击“下一句”按钮。</li>
+<li>Agent 接收股票市场的实时价格流（每秒 100 次更新），每 5 秒做一次分析。</li>
+<li>Agent 将用户的操作审计日志发送到合规服务器，网络断开了 1 分钟。</li>
+</ol>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ol>
+<li><strong>Latest</strong>: 用户只关心跳转到最新的位置，中间的点击如果处理不过来应忽略，但最后一次点击必须生效。</li>
+<li><strong>Latest (Sample)</strong>: 每 5 秒取样一次最新的价格即可，中间的价格波动对于 5 秒粒度的分析可能不重要（除非要做高频交易，那是另一回事）。</li>
+<li><strong>Queue</strong>: 审计日志绝不能丢。必须在本地排队（持久化更好），等待网络恢复后重放。</li>
+</ol>
+</details>
+<p><strong>Q3. 简单的并发限制</strong>
+如果你的 Python Sandbox 只能同时运行 1 个代码块，但 Agent 逻辑中并发发出了 3 个代码执行请求。使用 <code>mergeMap(execute, concurrency=1)</code> 会发生什么？会报错吗？</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<p>不会报错。
+请求 1 会立即执行。
+请求 2 和 3 会进入“挂起（Pending）”状态，也就是排队。
+一旦请求 1 完成，请求 2 自动开始执行。
+这正是 FRP 处理资源争用的优雅之处。</p>
+</details>
+<hr />
+<h3 id="_2">挑战题</h3>
+<p><strong>Q4. 设计：Embedding 优化器 (The Smart Batcher)</strong>
+设计一个 Batching 逻辑，满足以下苛刻条件：</p>
+<ol>
+<li><strong>成本控制</strong>：API 调用次数越少越好（尽量凑满 20 条）。</li>
+<li><strong>延迟控制</strong>：任何一条数据进入缓冲区后，等待时间不得超过 100ms。</li>
+<li><strong>容量限制</strong>：整个 Batch 的 Token 总数不能超过 8192（即使条数没满 20 条，Token 满了也要发）。</li>
+</ol>
+<p><em>提示：你需要维护一个累加状态（scan）。</em></p>
+<details>
+<summary><strong>提示与参考思路</strong></summary>
+<p><strong>思路</strong>：
+这不简单的 <code>bufferTime</code> 或 <code>bufferCount</code> 能解决的。你需要自定义一个 <strong>Accumulator (累加器)</strong>。</p>
+<ol>
+<li>源数据流 <code>ItemStream</code>。</li>
+<li>使用 <code>scan</code> 算子维护当前 Batch 的状态：<code>{ count: 0, tokens: 0, items: [], firstItemTime: null }</code>。</li>
+<li>对于每个新 Item：<ul>
+<li>检查 <code>tokens + newItem.tokens &gt; 8192</code>? 如果是 -&gt; 触发 Emit，重置状态。</li>
+<li>检查 <code>count + 1 &gt;= 20</code>? 如果是 -&gt; 触发 Emit，重置状态。</li>
+<li>如果是 Batch 的第一个元素，开启一个 100ms 的 Timer。</li>
+</ul>
+</li>
+<li>Timer 到期时 -&gt; 触发 Emit（如果 Batch 非空）。</li>
+<li>这个逻辑在 FRP 中通常可以用 <code>window</code> 配合自定义的 Closing Notifier 来实现，或者编写一个自定义的 <code>Operator</code>。</li>
+</ol>
+</details>
+<p><strong>Q5. 错误处理的“连坐”与隔离</strong>
+你做了一个 Batcher，把 10 个用户的 Prompt 合并发送给 LLM。结果其中 1 个用户的 Prompt 包含违禁词，导致 API 返回 400 Error，整个 Batch 失败。
+请设计一个<strong>自动降级与恢</strong>流程，使得其他 9 个用户不受影响。</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<p><strong>“分治重试”策略 (Divide and Conquer Retry)</strong>：</p>
+<ol>
+<li><strong>捕获错误</strong>：当 Batch 请求收到 400 错误时，不要透传给下游。</li>
+<li><strong>拆分 (Split)</strong>：将失败的 Batch（例如 10 个）拆分为两个小 Batch（5 + 5）或者退化为 10 个单独的请求（Singular fallback）。</li>
+<li><strong>重试 (Retry)</strong>：重新发送这些拆分后的请求。</li>
+<li><strong>递归</strong>：如果 5 个的 Batch 还是失败，继续拆分，直到找到那个唯一的“坏苹果”。</li>
+<li><strong>结果缝合</strong>：将成功的 9 个结果分别回传给对应的 Subject/Promise，将那个失败的 1 个结果标记为 Error。
+<em>这在 FRP 中可以通过 <code>catchError</code> + <code>expand</code> (递归) 或 <code>switchMap</code> 里的重试逻辑来实现。</em></li>
+</ol>
+</details>
+<p><strong>Q6. 竞态条件：Speculative Execution 的撤销</strong>
+Agent 预测用户可能需要“查询天气”，因此在用户还在打字时就提前发起了天气查询（Speculative）。</p>
+<ol>
+<li>Stream A: 用户打字流。</li>
+<li>Stream B: 投机触发的工具调用流。</li>
+<li>情况：用户打字结束，明确说“我不需要天气，我要听歌”。</li>
+<li>此时工具调用（HTTP请求）已经发出但未返回。
+如何利用 FRP 的特性，确保天气查询的结果返回时，<strong>不会</strong> 消耗 Token 去进行下一步的 LLM 处理，也不会展示在 UI 上？</li>
+</ol>
+<details>
+<summary><strong>参考答案</strong></summary>
+<p>这是 <code>switchLatest</code> (或 <code>switchMap</code>) 的经典用例。</p>
+<ul>
+<li>
+<p><strong>架构</strong>：
+    <code>UserIntentStream</code> -&gt; <code>switchMap(intent =&gt; executeTool(intent))</code></p>
+</li>
+<li>
+<p><strong>流程</strong>：</p>
+<ol>
+<li>Intent A (可能查天气) 发出 -&gt; <code>switchMap</code> 订阅工具调用 Observable。</li>
+<li>Intent B (听歌) 发出 -&gt; <code>switchMap</code> <strong>立即取消</strong> (Unsubscribe) Intent A 的内部 Observable。</li>
+</ol>
+</li>
+<li>
+<p><strong>底层</strong>：
+    Observable 的 Teardown Logic（清理逻辑）会被触发。</p>
+<ul>
+<li>如果 HTTP 请求库支持 <code>AbortSignal</code>，则网络请求会被 Abort。</li>
+<li>使网络请求无法 Abort（服务器已处理），客户端的回调函数永远不会被调用，后续的流程（LLM 处理、UI 渲染）自然被切断。</li>
+</ul>
+</li>
+</ul>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="1-zombie-requests">1. 僵尸请求 (Zombie Requests)</h3>
+<ul>
+<li><strong>现象</strong>：UI 已经切换了页面，但后台还在疯狂请求 API，且回来后报错“Component destroyed”。</li>
+<li><strong>原因</strong>：FRP 的流必须显式管理生命周期。组件销毁时没有 <code>unsubscribe</code> 或发送 <code>complete</code> 信号。</li>
+<li><strong>调试</strong>：检查 Pending 请求数是否随着页面刷新单调增加。</li>
+</ul>
+<h3 id="2-buffer-flush">2. 只有 Buffer 没有 Flush</h3>
+<ul>
+<li><strong>现象</strong>：日志系统永远少最后几条日志。</li>
+<li><strong>原因</strong>：使用了 <code>bufferCount(10)</code>，结果最后只积攒了 7 条，程序就退出了。</li>
+<li><strong>对策</strong>：必须配合 <code>bufferTime</code> 使用（混合策略），或者在程序退出钩子（Shutdown Hook）中强制 <code>flush</code> 所有缓冲区。</li>
+</ul>
+<h3 id="3-head-of-line-blocking">3. "长尾"阻塞 (Head-of-Line Blocking)</h3>
+<ul>
+<li><strong>现象</strong>：为了凑够 Batch，强行等待了 200ms，导致原本可以 50ms 完成的请求被迫延迟到 250ms+。</li>
+<li><strong>对策</strong>：区分链路。对于 Latency Sensitive 的链路（如首字生成），<strong>禁用 Batch</strong> 或设置极短的窗口（如 10ms）。Batch 主要用于 Throughput Sensitive 的链路（如 RAG 索引构建）。</li>
+</ul>
+<h3 id="4-merge">4. 误用的 <code>merge</code> 导致乱序</h3>
+<ul>
+<li><strong>现象</strong>：用户先发了 "Hi"，后发了 "Bye"。结果 Agent 先回了 "Bye" 的回复，后回了 "Hi" 的回复。</li>
+<li><strong>原因</strong>：使用了 <code>mergeMap</code> 处理 LLM 请求，且没做并发限制。"Hi" 的处理比 "Bye" 慢，导致结果乱序返回。</li>
+<li><strong>对策</strong>：对于有因果关系的对话流，必须使用 <code>concatMap</code>（严格串行）或者带 <code>orderId</code> 的重排序机制。</li>
+</ul>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter8.html" class="nav-link prev">← Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</a><a href="chapter10.html" class="nav-link next">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md) →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

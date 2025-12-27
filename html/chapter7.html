@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-7rag-db-python-toolcall">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</h1>
+<h2 id="1">1. 开篇段落</h2>
+<p>在构建复杂的 Agent 时，最昂贵的操作往往不是 LLM 推理本身，而是获取外部信息的 IO 操作：检索向量库（RAG）、查询关系型数据库（DB）或执行代码（Python Sandbox）。在传统的请求-响应（Request-Response）模型中，这些操作是“阻塞”的——Agent 必须暂停思考，直到数据返回。</p>
+<p><strong>FRP（函数式响应编程）改变了这一范式</strong>。我们将外部知识视为一条条<strong>“流动的管道（Streaming Pipelines）”</strong>。</p>
+<ul>
+<li><strong>知识即事件</strong>：数据不是静态存在那里的，而是随时间推移“到达”的。</li>
+<li><strong>异步非阻塞</strong>：Agent 发出查询意图，立即准备处理其他逻辑（如 UI 交互），数据到达时会自动触发“状态更新（State Update）”。</li>
+<li><strong>副作用管理</strong>：将“只读查询”与“写操作”严格区分，通过 Effect 系统隔离风险。</li>
+</ul>
+<p>本章将深入探讨如何用 FRP 原语构建一个高并发、低延迟、可观测的知识获取系统。</p>
+<h2 id="2">2. 文字论述</h2>
+<h3 id="71-rag-rpc-observable-dag">7.1 RAG 管道拆解：从 RPC 到 Observable DAG</h3>
+<p>不要将 RAG 简单视为 <code>f(query) -&gt; documents</code>。在生产环境中，它是一个有向无环图（DAG），每个节点都是一个可被观测的流。</p>
+<h4 id="vs-frp">传统视角 vs. FRP 视角</h4>
+<ul>
+<li><strong>传统</strong>：串行执行。Rewrite -&gt; Embed -&gt; Vector Search -&gt; Keyword Search -&gt; Merge -&gt; Rerank -&gt; Return。任何一步卡住，全链路等待。</li>
+<li><strong>FRP</strong>：数据流网络。各个环节解耦，下游算子订阅上游算子的输出。</li>
+</ul>
+<h4 id="_1">架构图示</h4>
+<div class="codehilite"><pre><span></span><code>UserQueryEvent
+      │
+      ├──&gt; [Query Rewriter] ──&gt; RewrittenQueryStream
+      │                                 │
+      │                                 ├──(map)──&gt; [Embedding Service] ──&gt; VectorStream
+      │                                 │
+      │                                 └──(map)──&gt; [Keyword Search] ─────&gt; KeywordStream
+      │                                                                         │
+      ▼                                                                         │
+[Intent Classifier]                                                             │
+      │                                                                         ▼
+      └──&gt; (filter: is_navigational?) ──&gt; [Knowledge Graph] ──────────&gt; GraphStream
+                                                                               │
+                                                                               ▼
+                                                   [Fusion Operator (combineLatest + buffer)]
+                                                                               │
+                                                                               ▼
+                                                                     [Reranker &amp; Filter]
+                                                                               │
+                                                                               ▼
+                                                                     [ContextPatch Signal]
+</code></pre></div>
+
+<p><strong>关键设计模式</strong>：</p>
+<ol>
+<li><strong>并行扇出 (Fan-out)</strong>：使用 <code>share()</code> 算子将同一个查询信号分发给多个检索源（Vector, Keyword, KG）。</li>
+<li><strong>弹性聚合 (Fan-in)</strong>：使用 <code>zip</code>（等待所有返回）或 <code>combineLatest</code>（有更新就触发）。</li>
+<li><strong>部分可用性</strong>：如果在规定时间窗口内 VectorStream 返回了但 KeywordStream 超时，<code>timeoutWith</code> 算子可以决定是继续等待还是直接使用部分结果向下游流转。</li>
+</ol>
+<h3 id="72">7.2 检索触发器：不仅仅是用户提问</h3>
+<p>在实 Agent 中，检索不应只由用户的显式提问触发。我们需要定义多种“触发源（Trigger Source）”。</p>
+<ol>
+<li><strong>显式意图流 (Explicit Intent Stream)</strong><ul>
+<li>通过意图分类模型，当检测到 <code>UserAsk(Query)</code> 事件时触发。这是最基础的。</li>
+</ul>
+</li>
+<li><strong>推测性触发流 (Speculative Trigger Stream)</strong><ul>
+<li><strong>基于不确定性</strong>：监控 LLM 生成流的 Token Logprobs。如果某个实体名词（Entity）的置信度低于阈值（如 0.4），或者 LLM 输出了特殊的占位符 <code>&lt;LOOKUP&gt;</code>，立即发射检索事件。</li>
+<li><strong>预取 (Prefetching)</strong>：用户还在打字（<code>TypingStream</code>），基于未完成的输入片段进行模糊检索，提前预热缓存。</li>
+</ul>
+</li>
+<li><strong>环境上下文流 (Contextual Trigger Stream)</strong><ul>
+<li><strong>时间/位置变化</strong>：当 <code>SystemClock</code> 跨越了关键时间点（如早上 8:00），或 <code>LocationSignal</code> 发生位移，自动触发一次“上下文刷新检索”，更新 Prompt 中的“周边信息”。</li>
+</ul>
+</li>
+</ol>
+<h3 id="73-streaming-synthesis">7.3 增量检索与流式合成 (Streaming Synthesis)</h3>
+<p>为了追求极致的<strong>首字延迟（TTFT）</strong>，我们不能等到所有文档都 Rerank 完毕才开始生成。</p>
+<h4 id="arace">策略 A：Race (竞速模式)</h4>
+<p>适用于简单问答。</p>
+<ul>
+<li><strong>算子</strong>：<code>race(SourceA, SourceB, Cache)</code>。</li>
+<li><strong>逻辑</strong>：Cache 往往最快。如果 Cache 命中，直接使用，并取消 SourceA 和 SourceB 的网络请求（利用 FRP 的 <code>unsubscribe</code> 机制节省 Token 和带宽）。</li>
+</ul>
+<h4 id="bprogressive-refinement">策略 B：Progressive Refinement (渐进式优化)</h4>
+<p>适用于复杂研究任务。</p>
+<ul>
+<li><strong>算子</strong>：<code>scan</code> (累加器) + <code>switchMap</code>。</li>
+<li><strong>流程</strong>：<ol>
+<li><strong>T+100ms</strong>: 关键词搜索返回 3 个结果。Prompt 更新，LLM 开始生成“基于目前信息，大概是...”。</li>
+<li><strong>T+500ms</strong>: 向量搜索返回 10 个更精准结果。Prompt 再次更新。</li>
+<li><strong>LLM 行为</strong>：此时通过 <code>switchLatest</code> 机制，如果前一个回答尚未发给用户，则丢弃；如果已发，则在 UI 上发送一个 <code>CorrectionEvent</code>（修正补丁）或者生成一个新的段落补充细节。</li>
+</ol>
+</li>
+</ul>
+<h3 id="74-db-schema">7.4 DB 查询：Schema 感知与副作用隔离</h3>
+<p>数据库操作必须严格区分<strong>Query（查）</strong>和<strong>Command（改）</strong>。</p>
+<h4 id="schema-as-signal">Schema as Signal (模式即信号)</h4>
+<p>Prompt 需要知道数据库长什么样。但 Schema 可能会变。</p>
+<ul>
+<li>建立一个 <code>DatabaseSchemaSignal</code>。</li>
+<li>当 DB 管理员修改表结构时，推送新 Schema。</li>
+<li>Agent 的 System Prompt 订阅此 Signal。</li>
+<li><strong>效果</strong>：Schema 变更后，Agent 的下一次 SQL 生成会自动适配新字段，无需重启服务。</li>
+</ul>
+<h4 id="effect">只有 Effect 才能改变世界</h4>
+<ul>
+<li><strong>SQL 生成</strong>：这是纯函数逻辑（String -&gt; String）。</li>
+<li><strong>SQL 执行 (SELECT)</strong>：这是只读副作用，产生 <code>DBResultStream</code>。</li>
+<li><strong>SQL 执行 (INSERT/UPDATE)</strong>：这是危险副作用。<ul>
+<li>必须经过 <code>ApprovalGuard</code>（审批守卫算子）。</li>
+<li>必须实现 <code>Transactional</code>（事务性）。如果流在中途被取消（用户点了停止），事务必须回滚。FRP 的 <code>finalize</code> 回非常适合处理这种 cleanup 逻辑。</li>
+</ul>
+</li>
+</ul>
+<h3 id="75-python">7.5 Python 工具：沙箱与流式输出</h3>
+<p>Python Code Interpreter 是 Agent 最强大的“大脑扩展”，也是最大的风险点。FRP 将 Python 执行视为一个长生命周期的<strong>Observable Session</strong>。</p>
+<h4 id="_2">执行生命周期流</h4>
+<div class="codehilite"><pre><span></span><code>[ExecuteRequest] 
+   │
+   ├──&gt; (Start Sandbox) ──&gt; [ContainerReady]
+                                   │
+                                   ├──&gt; (stdin input)
+                                   │
+   ┌───────────────────────────────┼──────────────────────────────┐
+   │                               │                              │
+   ▼                               ▼                              ▼
+(Stdout Stream)             (Stderr Stream)                (Files Stream)
+   │                               │                              │
+   │ map(RenderLogUI)              │ map(AutoDebug)               │ map(Upload)
+   ▼                               ▼                              ▼
+[User UI: Console]          [ErrorCorrectionAgent]         [AttachmentUI]
+</code></pre></div>
+
+<h4 id="rule-of-thumb">关键处理 Rule-of-Thumb</h4>
+<ol>
+<li><strong>不要缓冲 (No Buffering)</strong>：Python 的 <code>stdout</code> 必须逐行（甚至逐字符）流向 UI。用户看到 print 就像看到 Agent 在思考，这能极大缓解等待焦虑。</li>
+<li><strong>超时即销毁 (Timeout = Kill)</strong>：使用 <code>takeUntil(StopSignal)</code> 或 <code>timeout(30s)</code>。一旦触发，FRP 框架的 teardown 逻辑必须强制 <code>kill -9</code> 容器，防止僵尸进程。</li>
+<li><strong>错误作为值 (Error as Value)</strong>：Python 报错（Exception）不应中断 Agent 的主线程，而应作为 <code>ComputationFailed</code> 事件进入流，触发 LLM 的自我修正（Self-Correction）分支。</li>
+</ol>
+<h3 id="76-stale-while-revalidate">7.6 缓存与一致性：Stale-while-revalidate</h3>
+<p>外部调用既慢又贵。FRP 天然支持高级缓存模式。</p>
+<ul>
+<li><strong>MemoryStream</strong>：所有的 <code>Effect</code> 输出都根据 Request Hash 存入内存或 Redis。</li>
+<li><strong>Stale-while-revalidate 算子组合</strong>：</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>inputStream.pipe(
+    switchMap(req =&gt; 
+        merge(
+            getFromCache(req),           // 立即发出（如果是旧数据）
+            fetchFromNetwork(req)        // 稍后发出（新数据）
+        )
+    )
+)
+</code></pre></div>
+
+<ul>
+<li><strong>UI 处理</strong>：UI 先收到旧数据展示（带“更新中...”角标），几秒后收到新数据自动刷新。这比单纯的 Loading 转圈体验好得多。</li>
+</ul>
+<h3 id="77">7.7 证据引用与可追溯性</h3>
+<p>为了解决幻觉，知识必须“带票据上车”。</p>
+<h4 id="rich-chunk">数据结构：Rich Chunk</h4>
+<p>进入 Prompt 的不仅仅是文本，而是结构化对象：</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;chunk_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vec_8821_chunk_5&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023年营收增长15%...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Q3_Report.pdf&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;page&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.89</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="citation-stream">引用流 (Citation Stream)</h4>
+<ol>
+<li><strong>Prompt 注入</strong>：将 Chunk 格式化为 <code>[Ref: vec_8821_chunk_5] 2023年营收...</code>。</li>
+<li><strong>生成监控</strong>：当 LLM 输出 <code>[Ref: vec_8821_chunk_5]</code> 时，前端解析器拦截该 Token。</li>
+<li><strong>反向查找</strong>：前端利用 ID 在本地缓存的 <code>RetrievalResults</code> 中找到对应的 Meta，渲染高亮链接。</li>
+<li><strong>一致性检查</strong>：如果 LLM 捏造了一个不存在的 ID，<code>VerificationStream</code> 会报警并标记该回答为“不可信”。</li>
+</ol>
+<h3 id="78-fusion">7.8 多来源融合 (Fusion)</h3>
+<p>当 SQL 查询结果（精准）与 RAG 结果（模糊）同时到达时，如何合并？</p>
+<ul>
+<li><strong>Conflict Resolution Strategy (冲突解决策略)</strong>：<ul>
+<li><strong>Tiered Merge (分层合并)</strong>：定义优先级 <code>DB &gt; API &gt; VectorStore &gt; KeywordSearch</code>。</li>
+<li><strong>Timestamp Weighing (时间加权)</strong>：如果 RAG 检索出的文档是 3 年前的，而 DB 数据是昨天的，FRP 的 <code>reducer</code> 函数应根据 timestamp 剔除旧信息。</li>
+</ul>
+</li>
+<li><strong>Operator</strong>: <code>zip(dbStream, ragStream).pipe(map(mergeLogic))</code>。<ul>
+<li>注意：这里通常不用 <code>race</code>，因为我们希望综合两者信息。</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>管道化思维</strong>：RAG 不再是一个函数调用，而是一个可拆解、可观测、可并行的事件处理 DAG。</li>
+<li><strong>时间是第一公民</strong>：利用 FRP 处理异步竞态、超时取消和增量更新，让 Agent 的反应速度接近人类直觉。</li>
+<li><strong>Schema 与 State 同步</strong>：数据库结构的变化本身就是一种环境信号，必须实时推送到 Agent 的上下文中。</li>
+<li><strong>流式反馈</strong>：无论是 Python 的 print 还是文档检索的中间状态，都应作为事件流实时反馈给用户，提升透明度。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_3">基础题</h3>
+<p><strong>Q1: 基础管道搭建</strong>
+请用文字描述（或伪代码）搭建一个包含“缓存层”的检索管道。要求：</p>
+<ol>
+<li>收到查询 <code>Q</code>。</li>
+<li>同时查询内存缓存 <code>Cache</code> 和 远程向量库 <code>Remote</code>。</li>
+<li>如果 <code>Cache</code> 命中，立即返回并终止 <code>Remote</code> 请求。</li>
+<li>如果 <code>Cache</code> 未命中，等待 <code>Remote</code> 返回并更新 <code>Cache</code>。</li>
+</ol>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>思路</strong>：这是典型的 <code>race</code> 变种，或者使用 <code>concat</code> 配合条件判断。</li>
+<li><strong>FRP 逻辑</strong>：<ol>
+<li>定义 <code>cacheStream = lookupCache(Q)</code>。</li>
+<li>定义 <code>remoteStream = fetchRemote(Q).pipe(tap(updateCache))</code>。</li>
+<li>组合：<code>concat(cacheStream, remoteStream).pipe(first(result =&gt; result != null))</code>。</li>
+<li><strong>解释</strong>：<code>concat</code> 会先订阅 cacheStream。如果 cache 返回非空结果，<code>first</code> 算子满足条件，整个流结束（remoteStream 甚至不会被订阅，节省资源）。如果 cache 为空，<code>concat</code> 继续订阅 remoteStream。</li>
+</ol>
+</li>
+</ul>
+</details>
+<p><strong>Q2: 失败重试 (Retry with Backoff)</strong>
+RAG 服务经常网络波动。请设计一个流，当检索失败时：</p>
+<ol>
+<li>立即重试一次。</li>
+<li>如果还失败，等待 500ms 重试。</li>
+<li>再失败，等待 1s 重试。</li>
+<li>超过 3 次失败，返回一个默认的“搜索服务不可用”事件，而不是抛出异常崩溃。</li>
+</ol>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>思路</strong>：使用 <code>retryWhen</code> 或 <code>retry</code> 配合 <code>timer</code> 和 <code>zip</code>。</li>
+<li><strong>FRP 逻辑</strong>：</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>searchStream.pipe(
+    retryWhen(errors =&gt; 
+        errors.pipe(
+            zip(range(1, 3), (err, i) =&gt; i), // 限制重试次数
+            mergeMap(i =&gt; timer(i * 500))    // 指数退避或线性退避
+        )
+    ),
+    catchError(err =&gt; of(new ServiceUnavailableEvent())) // 兜底降级
+)
+</code></pre></div>
+
+</details>
+<p><strong>Q3: 节流防抖</strong>
+用户在搜索框快速输入 "Python", "Python t", "Python tut", "Python tutorial"。如果每个字符都触发 RAG，系统会崩溃。如何优化？</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>思路</strong>：<code>debounceTime</code> 是标准解法。</li>
+<li><strong>FRP 逻辑</strong>：<ol>
+<li><code>TypingStream</code> 产生按键事件。</li>
+<li>应用 <code>debounceTime(300)</code>：只有当用户停止输入超过 300ms 后，才通过最新的值。</li>
+<li>应用 <code>distinctUntilChanged()</code>：防止用户输入 "abc" -&gt; 删除 "c" -&gt; 再输入 "c" 导致重复触发（如果此时值变了 "abc" 且没变）。</li>
+<li>应用 <code>switchMap(query =&gt; search(query))</code>：如果在搜索 "tut" 的过程中用户又输入了 "orial"，取消前一次搜索，只搜最新的。</li>
+</ol>
+</li>
+</ul>
+</details>
+<h3 id="_4">挑战题</h3>
+<p><strong>Q4: 增量合成的“热替换”难题</strong>
+场景：用户问“昨天发生了什么”。</p>
+<ol>
+<li><strong>T+0.1s</strong>: 关键词检索返回“无大事发生”。LLM 开始输出：“昨天似乎很平静...”</li>
+<li><strong>T+1.5s</strong>: 深度向量检索返回“发生里氏 7.0 级地震”。</li>
+<li>此时 LLM 已经输出了 10 个 Token。
+请设计一个机制，既能利用新信息，又不让用户觉得 UI 出了 Bug（文字突然消失或鬼畜）。</li>
+</ol>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>提示</strong>：这是一个 UX + 技术综合题。FRP 负责提供“打断”能力，UI 负责“平滑”。</li>
+<li><strong>思路</strong>：<ol>
+<li><strong>Versioned Stream</strong>: 每个输出片段都带有 <code>version_id</code>。</li>
+<li><strong>Trigger</strong>: 当高置信度的新证据（地震）到达时，触发 <code>ContextUpdateEvent</code>。</li>
+<li><strong>FRP Action</strong>:<ul>
+<li>立即发送 <code>InterruptSignal</code> 停止当前的 LLM 生成流。</li>
+<li>发送一个 UI 事件 <code>StatusEvent("发现新情报，正在修正...")</code>。</li>
+<li>创建一个新的 Prompt（包含地震信息），带上指令“用户之前看到了一半‘昨天很平静’，请自然地转折或纠正”。</li>
+</ul>
+</li>
+<li><strong>UI 渲染</strong>:<ul>
+<li>前端收到打断信号，保留已输出的“昨天似乎很平静...”，将光标变为加载态。</li>
+<li>新流到达，LLM 生成可能是：“...哎呀，刚收到最新消息，实际上发生了大地震。”</li>
+<li>或者（更激进地）：UI 撤回上一句话（带删除线动画），重新打印新内容。FRP 能够轻松实现撤回，因为所有 Token 都是存储在 <code>Scan</code> 状态中的列表。</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>
+</details>
+<p><strong>Q5: 跨工具的事务回滚</strong>
+Agent 任务：“在数据库创建一个用户，并给他发一封欢迎邮件”。
+流程：DB Insert -&gt; Email Send。
+如果在发邮件失败了，如何利用 FRP 机制回滚 DB 的插入？</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>提示</strong>：这涉及到 SAGA 模式或补偿事务（Compensating Transaction）在流中的实现。</li>
+<li><strong>思路</strong>：<ol>
+<li>我们将操作建模为 observables 序列：<code>createUser$</code> 和 <code>sendEmail$</code>。</li>
+<li><code>createUser$</code> 成功后，产生一个 <code>UserCreatedEvent</code>（包含 ID 和一个**补偿闭包** <code>deleteUser$</code>）。</li>
+<li>使用 <code>concatMap</code> 连接 <code>sendEmail$</code>。</li>
+<li>如果 <code>sendEmail$</code> 抛出错误 (<code>catchError</code>)：<ul>
+<li>捕获错误。</li>
+<li>执行上一步保留的补偿闭包 <code>deleteUser$</code>。</li>
+<li>等待回滚完成后，向用户抛出最终失败事件。</li>
+</ul>
+</li>
+<li><strong>FRP 特性</strong>：可以利用 <code>resource</code> 或 <code>using</code> 算子，当流意外终止（uncaught error）时自动触发清理逻辑。</li>
+</ol>
+</li>
+</ul>
+</details>
+<p><strong>Q6: Python 沙箱的资源泄露</strong>
+如果用户让 Python 脚本打开了一个 10GB 的文件进行处理，然后立刻发出了 <code>Cancel</code> 信号。普通的线程取消可能无法立即释放文件句柄或内存。FRP 如何确保资源被清理？</p>
+<details>
+<summary><strong>参考答案</strong></summary>
+<ul>
+<li><strong>提示</strong>：关注 FRP 的 <code>TeardownLogic</code> 或 <code>Unsubscribe</code> 回调。</li>
+<li><strong>思路</strong>：<ol>
+<li><strong>封装</strong>：将 Python 执行环境封装在一个自定义的 Observable 中。</li>
+<li><strong>Teardown 注册</strong>：在 Observable 创建时，返回一个清理函数（Teardown function）。这个函数包含 <code>docker kill</code> 或 <code>os.kill(pid)</code> 的逻辑。</li>
+<li><strong>传播</strong>：当用户 UI 点击“停止”，或者上游 <code>takeUntil</code> 触发，FRP 框架会自动调用整个链路下游的清理函数。</li>
+<li><strong>强制性</strong>：清理函数应设计为幂等的，并且采用“发射并遗忘（Fire and Forget）”策略调用底层 OS 命令，确保即使主线程卡顿也能杀掉子进程。</li>
+</ol>
+</li>
+</ul>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<ol>
+<li>
+<p><strong>Backpressure 缺失导致的内存爆炸</strong></p>
+<ul>
+<li><strong>场景</strong>：RAG 检索返回了 10,000 个 chunks，Python 脚本 print 了 100MB 的日志。</li>
+<li><strong>问题</strong>：如果下游（UI 或 LLM）处理速度慢于上游生产速度，内存会积压。</li>
+<li><strong>调试技巧</strong>：监控 Node/Process 的内存使用曲线。</li>
+<li><strong>解决</strong>：在流上显式加 <code>take(N)</code>（截断），<code>sampleTime</code>（采样），或实现真正的 Pull-based Backpressure（虽然复杂，但对于大文件处理是必须的）。</li>
+</ul>
+</li>
+<li>
+<p><strong>Stale Closure (过闭包) 问题</strong></p>
+<ul>
+<li><strong>场景</strong>：在 <code>mergeMap</code> 或回调中使用了外部变量（如 <code>currentPrompt</code>）。当流延时执行时，外部变量已经变了，但闭包里还是旧值。</li>
+<li><strong>调试技巧</strong>：日志打印闭包内变量的值 vs 全局最新值。</li>
+<li><strong>解决</strong>：永远不要依赖闭包外的可变状态。将所有需要的状态作为参数（Event Payload）在流中传递，或者使用 <code>withLatestFrom(stateSignal)</code> 算子在执行时刻获取最新状态。</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Swallowing (错误吞噬)</strong></p>
+<ul>
+<li><strong>景</strong>：管道中间某一步报错，Observable 终止（Complete），整个 Agent 突然“沉默”了，没反应。</li>
+<li><strong>原理</strong>：根据 ReactiveX 协议，Error 事件是终止事件。</li>
+<li><strong>解决</strong>：<ul>
+<li>在关键算子（如 API 请求）内部使用 <code>catchError</code> 并返回一个代表错误的 Value（如 <code>Result.Failure</code>），而不是让 Error 冒泡炸断主管道。</li>
+<li>主管道应永远保持 Alive (<code>retry</code> or <code>catchError(return empty)</code> with logging)。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Python 输出乱序</strong></p>
+<ul>
+<li><strong>场景</strong>：Python 的 <code>stdout</code> 和 <code>stderr</code> 是两个流，但在 UI 上需要合并展示。简单合并可能导致报错信息出现在日志之前，误导 Debug。</li>
+<li><strong>解决</strong>：尽量保持时序，或者在 UI 层根据 Timestamp 重新排序。更好的是在 Python 侧包装一个结构化 Logger，将 stdout/stderr 统一封装为带序号的 <code>LogEvent</code>。</li>
+</ul>
+</li>
+<li>
+<p><strong>RAG 结果相关性低时的“强行回答”</strong></p>
+<ul>
+<li><strong>场景</strong>：RAG 没搜到东西，返空列表。LLM 接收到空 Context，开始产生幻觉。</li>
+<li><strong>解决</strong>：在 Pipeline 中加入 <code>filter</code> 或 <code>gate</code>。如果 <code>RetrievalResult.isEmpty</code>，则切换到 <code>NoDataPrompt</code>，或者直接阻断 RAG 分支，让 LLM 依靠自身训练数据（并提示用户“未找到外部资料，基于通用知识回答”）。</li>
+</ul>
+</li>
+</ol>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter6.html" class="nav-link prev">← Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</a><a href="chapter8.html" class="nav-link next">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳” →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

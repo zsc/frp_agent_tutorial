@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-3agent">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</h1>
+<h2 id="31-runtime">3.1 开篇：Runtime 的职责边界——从“脚本”到“引擎”</h2>
+<p>在简单的 Demo 中，Agent 可能只是一个 <code>while(true)</code> 循环里的一堆 Python 函数调用。但在生产级的实时系统中，这种写法会迅速崩溃：它无法优雅地处理用户打断、网络超时、并发工具调用或 Token 预算超标。</p>
+<p>我们需要一个 <strong>FRP Runtime（运行时）</strong>。</p>
+<p>如果把 Agent 的 Prompt 和策略逻辑比作<strong>游戏脚本</strong>，那么 Runtime 就是<strong>游戏引擎</strong>。
+游戏引擎负责物理碰撞、渲染循环、输入映射；同理，Agent Runtime 负责将混沌的现实世界抽象为有序的流。</p>
+<p><strong>Runtime 的核职责矩阵</strong>：</p>
+<p>| 领域 | 职责描述 | 典型问题示例 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">领域</th>
+<th style="text-align: left;">职责描述</th>
+<th style="text-align: left;">典型问题示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>I/O 归一化</strong></td>
+<td style="text-align: left;">将 HTTP/WebSocket/Timer 统一为 Event</td>
+<td style="text-align: left;">"用户说话"和"定时器到期"应该是一回事吗？</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>时空管理</strong></td>
+<td style="text-align: left;">维护逻辑时钟与物理时钟的映射</td>
+<td style="text-align: left;">"现在"是几点？重放昨天的数据时，"现在"是昨天。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>状态护栏</strong></td>
+<td style="text-align: left;">保证 State 的原子性与一致性</td>
+<td style="text-align: left;">两个工具同时返回结果，谁先谁后？谁覆盖谁？</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>副作用托管</strong></td>
+<td style="text-align: left;">隔离并调度所有外部调用 (Effect)</td>
+<td style="text-align: left;">用户这句不说了，后台正在跑的 SQL 查询要杀掉吗？</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>可观测性</strong></td>
+<td style="text-align: left;">提供“上帝视角”的 Trace 上下文</td>
+<td style="text-align: left;">这一步推理为什么这么慢？是模型慢还是网络卡？</td>
+</tr>
+</tbody>
+</table>
+<p>本章将详细解构这个引擎的内部构造。</p>
+<hr />
+<h2 id="32">3.2 “一切皆事件”：归一化输入与事件总线</h2>
+<p>在 FRP 架构中，<strong>没有“调用”，只有“事件”</strong>。
+传统的 Request/Response 模型是同步阻塞的，而 Event Stream 模型异步非阻塞的。</p>
+<h3 id="321-the-universal-envelope">3.2.1 通用事件信封 (The Universal Envelope)</h3>
+<p>为了让 Runtime 能处理任何类型的输入，我们需要一个标准化的“信封”。所有进入系统的数据包，必须先被封装。</p>
+<div class="codehilite"><pre><span></span><code>Structure: StandardEvent &lt;T&gt;
+-----------------------------------------------------------------------
+| Field          | Description                                        |
+-----------------------------------------------------------------------
+| id             | UUID v4 (唯一标识)                                 |
+| sequence_id    | 逻辑时钟序号 (单调递增，用于排序与去重)               |
+| type           | 事件类型枚举 (e.g. USER_INPUT, SYSTEM_TICK, TOOL_OK) |
+| timestamp      | 物理生成时间 (ISO8601)                               |
+| payload        | 泛型数据 T (实际内容)                                |
+| trace_context  | 分布式追踪 ID (TraceID, SpanID, ParentID)            |
+| source         | 事件来源 (UI, Timer, Worker-A)                       |
+-----------------------------------------------------------------------
+</code></pre></div>
+
+<h3 id="322">3.2.2 事件分类学</h3>
+<p>Runtime 内部处理的事件远不止“用户输入”和“模型输出”。我们需要处理四大类事件流：</p>
+<ol>
+<li>
+<p><strong>交互流 (Interaction Stream)</strong>:</p>
+<ul>
+<li><code>UserAudioChunkEvent</code>: 原始音频帧（高频）。</li>
+<li><code>UserTextEvent</code>: ASR 转录后的文本或打字内容。</li>
+<li><code>UserIntentEvent</code>: UI 交互，如点击“暂停”、“重新生成”。</li>
+</ul>
+</li>
+<li>
+<p><strong>系统流 (System Stream)</strong>:</p>
+<ul>
+<li><code>TickEvent</code>: 心跳，携带 <code>delta_time</code>，驱动倒计时和超时逻辑。</li>
+<li><code>LifeCycleEvent</code>: <code>START</code>, <code>SHUTDOWN</code>, <code>SLEEP</code>。</li>
+<li><code>ConnectivityEvent</code>: 网络状态变化，WebSocket 断开/重连。</li>
+</ul>
+</li>
+<li>
+<p><strong>模型与工具流 (Computation Stream)</strong>:</p>
+<ul>
+<li><code>ModelTokenEvent</code>: LLM 吐出的流式 Token。</li>
+<li><code>ToolReceiptEvent</code>: 工具执行完成的回执（含结果或错误栈）。</li>
+<li><code>BudgetAlarmEvent</code>: Token 预算耗尽告警。</li>
+</ul>
+</li>
+<li>
+<p><strong>成流 (Synthetic Stream)</strong>:</p>
+<ul>
+<li><code>VADTriggerEvent</code>: 语音活动检测触发（用户开始说话/停止说话）。</li>
+<li><code>SilenceTimeoutEvent</code>: 用户沉默超时（Bot 主动搭话）。</li>
+</ul>
+</li>
+</ol>
+<p><strong>架构图：事件漏斗</strong></p>
+<div class="codehilite"><pre><span></span><code>[WebSocket] --\
+[Timer API] ----\
+[HTTP Hook] ------+--&gt; [Ingress Adapters] --&gt; [Event Normalizer]
+[Microphone] ---/            (Raw Data)       (Add Timestamp/ID)
+                                                      |
+                                                      v
+                                               [Main Event Bus]
+                                              (The Central Stream)
+</code></pre></div>
+
+<hr />
+<h2 id="33-agentstate">3.3 AgentState 设计：状态树与不可变性</h2>
+<p>状态（State）是 Agent 的“记忆”。在 FRP 中，State 是 Stream 经过 <code>scan</code> (accumulate) 算子产生的 <strong>Signal</strong>。</p>
+<h3 id="331">3.3.1 状态树结构</h3>
+<p>不要把所有东西塞进一个扁平的字典。推荐使用<strong>组合式状态树</strong>：</p>
+<div class="codehilite"><pre><span></span><code>AgentState (Root)
+├── Meta
+│   ├── SessionID
+│   ├── StartTime
+│   └── LastActiveTime
+├── Environment (环境感知)
+│   ├── SystemTime
+│   ├── UserLocation
+│   └── DeviceStatus
+├── Conversation (核心会话)
+│   ├── History (消息列表)
+│   ├── CurrentTurn (当前轮次草稿)
+│   └── ContextSummary (长记忆摘要)
+├── RuntimeStatus (控制面)
+│   ├── Stage (Idle / Listening / Thinking / Speaking)
+│   ├── PendingEffects (正在执行的副作用列表)
+│   └── TokenUsage (累计消耗)
+└── Buffer (缓冲区)
+    └── PartialInput (尚未提交的用户输入片段)
+</code></pre></div>
+
+<h3 id="332-immutable">3.3.2 为什么必须是不可变 (Immutable)？</h3>
+<p>在 JavaScript/TypeScript 中可能使用 Immer.js，在 Python 中使用 Pydantic 的 <code>frozen=True</code> 或 <code>dataclasses(frozen=True)</code>。</p>
+<ol>
+<li><strong>比较（Diffing）效率</strong>：React 式的 UI 更新依赖于引用比较 (<code>oldState !== newState</code>)。如果是不可变对象，判断是否需要重绘 UI 极其快</li>
+<li><strong>并发安全</strong>：由于旧状态不会被修改，正在读取旧状态用于渲染或日志的线程不会发生数据竞争。</li>
+<li><strong>历史回溯</strong>：保存 <code>State</code> 对象的引用列表，即自动获得了“撤销/重做”功能。</li>
+</ol>
+<hr />
+<h2 id="34-reducer">3.4 Reducer 规范：纯函数核心</h2>
+<p>Reducer 是 Runtime 的心脏。它定义了：<strong>当发生 X 时，如果当前处于 Y 状态，那么变成 Z 状态，并计划执行副作用 E。</strong></p>
+<h3 id="341">3.4.1 函数签名</h3>
+<p>$$ (CurrentState, Event) \Rightarrow (NewState, EffectDescriptor[]) $$</p>
+<p>注意返回值包含两部分：</p>
+<ol>
+<li><strong>NewState</strong>: 立即生效的内存变更。</li>
+<li><strong>EffectDescriptor[]</strong>: <strong>描述</strong>需要做什么，而不是直接做。</li>
+</ol>
+<h3 id="342">3.4.2 案例：状态机逻辑</h3>
+<p>让我们看一个具体的 Reducer 逻辑片段（伪代码逻辑）：</p>
+<div class="codehilite"><pre><span></span><code>Function MainReducer(state, event):
+
+    // 场景：用户正在说话，打断了机器人的思考
+    if state.Stage == &quot;Thinking&quot; AND event.Type == &quot;VAD_USER_START_TALKING&quot;:
+        return (
+            state.copy(
+                Stage = &quot;Listening&quot;,
+                Buffer.append(event.payload)
+            ),
+            [ 
+              Cmd.CancelCurrentLLM(),  // 这是一个描述对象，不是函数调用
+              Cmd.UI.ShowStatus(&quot;Listening...&quot;) 
+            ]
+        )
+
+    // 场景：工具调用成功返回
+    if state.Stage == &quot;ToolUse&quot; AND event.Type == &quot;TOOL_SUCCESS&quot;:
+        return (
+            state.copy(
+                Stage = &quot;Synthesizing&quot;,
+                Conversation.History.add(ToolMessage(event.data))
+            ),
+            [ Cmd.RunLLM(prompt=build_prompt(state)) ]
+        )
+
+    return (state, []) // 默认无变化
+</code></pre></div>
+
+<p><strong>关键原则</strong>：Reducer 内部<strong>零副作用</strong>。禁止 <code>print</code>，禁止 <code>requests.get</code>，禁止 <code>time.sleep</code>。它必须是数学意义上的纯函数，这保证了系统的<strong>确定性（Determinism）</strong>。</p>
+<hr />
+<h2 id="35-effect">3.5 Effect 执行器：副作用的“隔离病房”</h2>
+<p>Reducer 吐出的 <code>EffectDescriptor</code> 只是数据的“处方”。Runtime 中的 <strong>Effect Orchestrator</strong> 负责按处方抓药。</p>
+<h3 id="351-effect">3.5.1 Effect 描述符结构</h3>
+<div class="codehilite"><pre><span></span><code>EffectDescriptor
+----------------
+| id        | 关联的 Trigger Event ID (用于溯源)
+| type      | HTTP / DB / LLM / TIMER / UI
+| payload   | 请求参数 (URL, SQL, Prompt)
+| policy    | 执行策略 (RetryCount, Timeout, Priority)
+| key       | 幂等键 (用于去重)
+</code></pre></div>
+
+<h3 id="352">3.5.2 执行与生命周期管理</h3>
+<p>Effect Orchestrator 监听 Reducer 的输出流。当收到 Effect 列表时：</p>
+<ol>
+<li>
+<p><strong>Diff &amp; Schedule</strong>: 比较当前正在运行的 Effect 和新收到的 Effect。</p>
+<ul>
+<li><em>New</em>: 启动新的 Executor。</li>
+<li><em>Obsolete</em>: 如果新列表中没有旧的 Effect ID，说明该任务被取消了 -&gt; 发送 Abort 信号。</li>
+<li><em>Same</em>: 保持运行，不做操作。</li>
+</ul>
+</li>
+<li>
+<p><strong>Execution Isolation</strong>: 每个 Effect 在独立的异步任务（Promise/Future/Task）中运行。</p>
+</li>
+<li>
+<p><strong>Feedback Loop</strong>:</p>
+<ul>
+<li>任务成功 -&gt; 发出 <code>EffectResolvedEvent</code>。</li>
+<li>任务失败 -&gt; 发出 <code>EffectFailedEvent</code>。</li>
+<li>这些 Event 会再次进入 Event Bus，触发下一次 Reducer 循环。</li>
+</ul>
+</li>
+</ol>
+<h3 id="353-switch-vs-merge">3.5.3 复杂的并发控制：Switch vs Merge</h3>
+<p>Runtime 需要根据 Effect 类型选择不同的 FRP 策略：</p>
+<ul>
+<li><strong>SwitchStrategy (最新优先)</strong>: 适用于 LLM 推理。如果用户改口了，旧的 LLM 请求应该立即作废。<ul>
+<li><em>FRP 算子</em>: <code>switchLatest</code></li>
+</ul>
+</li>
+<li><strong>MergeStrategy (并发执行)</strong>: 适用于并行搜索。同时查 Google 和 Wikipedia，谁先回来无所谓，都要。<ul>
+<li><em>FRP 算子</em>: <code>merge</code></li>
+</ul>
+</li>
+<li><strong>QueueStrategy (串行执行)</strong>: 适用于写数据库日志。必须按顺序写，不能并发。<ul>
+<li><em>FRP 算子</em>: <code>concat</code></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="36-checkpoint-snapshot">3.6 Checkpoint 与 Snapshot：从崩溃中重生</h2>
+<p>在实时 Agent 中，Session 可能会持续很久（数小时），Event Log 会变得巨大。我们不能每次恢复都从第 1 个事件开始重放。</p>
+<h3 id="361">3.6.1 混合持久化策略</h3>
+<p>Runtime 需要一个后台进程，执行以下逻辑：</p>
+<ol>
+<li><strong>WAL (Write-Ahead Log)</strong>: 每进入 Bus 的 Event 立即追加写入磁盘/DB。这是“真理来源”。</li>
+<li><strong>Periodic Snapshot</strong>:<ul>
+<li>规则：每处理 100 个事件 或 每 5 分钟。</li>
+<li>动作：将当前 <code>AgentState</code> 序列化为 JSON/Binary，存入 Object Store，标记 Version N。</li>
+<li>同时：截断（Rotate）旧的 Log，只保留 Version N 之后的 Log。</li>
+</ul>
+</li>
+</ol>
+<h3 id="362-hydration">3.6.2 恢复流程 (Hydration)</h3>
+<p>当服务重启或发生 Pod 漂移时：</p>
+<ol>
+<li>从 DB 读取最新的 Snapshot (Version N)。</li>
+<li>反序列化为 <code>AgentState</code> 对象。</li>
+<li>读取 Version N 之后的所有 WAL Events。</li>
+<li>运行 <code>Reducer(State, Event)</code> 循环（<strong>注意：此时禁用 Effect 执行器</strong>），快速“快进”到崩溃前的状态。</li>
+<li>恢复正常模式，启用 Effect 执行器。</li>
+</ol>
+<hr />
+<h2 id="37-agent-supervisor-tree">3.7 多 Agent 与层级 (Supervisor Tree)</h2>
+<p>复杂的 Agent 不是单体，而是<strong>分形（Fractal）</strong>的。</p>
+<ul>
+<li><strong>主控 (Main Agent)</strong>: 负责路由和全局上下文。</li>
+<li><strong>专家 (Sub-Agent)</strong>: 负责特定领域（如写代码、机票）。</li>
+</ul>
+<h3 id="371-stream-of-streams">3.7.1 Stream of Streams</h3>
+<p>在 Runtime 中，Sub-Agent 本身可以被视为一个 <strong>Long-running Effect</strong>。</p>
+<ol>
+<li>Main Reducer 发出 <code>Effect: SpawnSubAgent("Coder")</code>。</li>
+<li>Runtime 启动一个新的 Stream 实例（子运行时）。</li>
+<li><strong>管道连接 (Piping)</strong>:<ul>
+<li>Main Agent 将部分 Event (如用户的特定指令) 转发给 Sub-Agent。</li>
+<li>Sub-Agent 的输出 Event (如代码结果) 被包装成 Main Agent 的输入 Event。</li>
+</ul>
+</li>
+</ol>
+<p>这种结构类似于 Erlang 的 Supervisor Tree：如果 Sub-Agent 崩溃，Main Agent 可以收到 <code>ChildCrashEvent</code>，并决定是重启它还是向用户道歉。</p>
+<hr />
+<h2 id="38-runtime">3.8 插件化架构：Runtime 扩展点</h2>
+<p>为了保持 Runtime 核心代码的通用性，所有具体业务能力都应通过插件注入。</p>
+<p><strong>插件接口定义 (Protocol)</strong>:</p>
+<ol>
+<li>
+<p><strong>ToolPlugin</strong>:</p>
+<ul>
+<li><code>manifest</code>: JSON Schema，用于注入 Prompt。</li>
+<li><code>handler</code>: <code>(payload) =&gt; Promise&lt;Result&gt;</code>，实际执行逻辑。</li>
+<li><code>cleanup</code>: 资源回收钩子。</li>
+</ul>
+</li>
+<li>
+<p><strong>MemoryPlugin</strong>:</p>
+<ul>
+<li><code>retrieve(state, query)</code>: 如何根据当前 State 查找向量库。</li>
+<li><code>observe(event)</code>: 哪些 Event 值得被存入长期记忆。</li>
+</ul>
+</li>
+<li>
+<p><strong>PolicyPlugin</strong> (高级):</p>
+<ul>
+<li>允许替换默认的 Reducer 逻辑。例如，在此插件中实现 ReAct 循环或 COT（思维链）逻辑，而不修改核心 Runtime。</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="39">3.9 本章小结</h2>
+<ol>
+<li><strong>Runtime 是引擎</strong>：它负责时间、并发、IO 和状态管理，让业务逻辑保持纯粹。</li>
+<li><strong>Reducer 模式</strong>：$(State, Event) \rightarrow (NewState, Effect[])$ 是核心循环。</li>
+<li><strong>Effect 是描述符</strong>：把“想做某事”和“真正做某事”分开，实现了可测试和可回放。</li>
+<li><strong>状态树</strong>：结构化的、不可变的状态树是系统的单一事实来源（Single Source of Truth）。</li>
+<li><strong>韧性</strong>：通过 WAL + Snapshot 实现崩溃恢复；通过 Supervisor Tree 实现错误隔离。</li>
+</ol>
+<hr />
+<h2 id="310">3.10 练习题</h2>
+<h3 id="_1">基础题</h3>
+<p><strong>练习 1：Effect vs Event 辨析</strong>
+在 Runtime 日志中看到了下条目，请标记它是 Event (E), State Change (S), 还是 Effect Descriptor (D):</p>
+<ol>
+<li><code>Payload: { "text": "Hello world" }, Source: User</code></li>
+<li><code>Action: HTTP_POST, URL: api.weather.com</code></li>
+<li><code>CurrentStage changed from "Idle" to "Fetching"</code></li>
+<li><code>Payload: { "temp": 25 }, Source: WeatherAPI</code></li>
+</ol>
+<details>
+<summary>参考答案</summary>
+<ol>
+<li><strong>Event (E)</strong>: 外部输入的事实。</li>
+<li><strong>Effect Descriptor (D)</strong>: Reducer 发出的意图，尚未执行。</li>
+<li><strong>State Change (S)</strong>: Reducer 计算后的结果。</li>
+<li><strong>Event (E)</strong>: 外部 API 返回的结果被封装成了事件。</li>
+</ol>
+</details>
+<p><strong>练习 2：纯函数检查</strong>
+以下 Reducer 代码有什么问题？请指出至少两处违反 Runtime 规范的地方。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">bad_reducer</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;ASK_TIME&quot;</span><span class="p">:</span>
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="c1"># 1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User asked for time: </span><span class="si">{</span><span class="n">current_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># 2</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">log_access</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span> <span class="c1"># 3</span>
+        <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">response</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">current_time</span><span class="p">)),</span> <span class="p">[]</span>
+</code></pre></div>
+
+<details>
+<summary>参考答案</summary>
+<ol>
+<li><strong>隐式时间依赖</strong>: <code>datetime.now()</code> 使函数变得不确定。在重放时，时间会变成重放时的时间，而不是事件发生时的时间。应使用 <code>event.timestamp</code> 或从 <code>state.env.system_time</code> 获取。</li>
+<li><strong>IO 副作用 (Print)</strong>: 不应在 reducer 中打印，应通过日志中间件观察流。</li>
+<li><strong>IO 副作用 (DB)</strong>: <code>db.log_access</code> 是写数据库操作，必须封装为 <code>Effect</code> 返回，不能直接调用。</li>
+</ol>
+</details>
+<h3 id="_2">挑战题</h3>
+<p><strong>练习 3：设计“优雅打断”机制</strong>
+场景：LLM 正在生成长文本（Stream Token Event 持续涌入），此时用户说了一句“算了，换个话题”。
+请描述 Runtime 内部各组件如何协同工作，实现立即停止生成并切换状态。</p>
+<details>
+<summary>参考答案 (提示)</summary>
+<ol>
+<li><strong>Input</strong>: Ingress 收到音频，VAD 触发 <code>UserInterruptionEvent</code>。</li>
+<li><strong>Reducer</strong>:<ul>
+<li>收到 Interruption Event。</li>
+<li>计算 NewState: 将 <code>Stage</code> 从 <code>Speaking</code> 设为 <code>Listening</code>；空 <code>PendingOutputBuffer</code>。</li>
+<li>生成 Effects: <code>[ Cmd.CancelTask(target="LLM_Generation"), Cmd.AudioPlayer.Stop() ]</code>。</li>
+</ul>
+</li>
+<li><strong>Effect Orchestrator</strong>:<ul>
+<li>收到 <code>CancelTask</code> 指令。</li>
+<li>查找正在运行的 LLM 调用任务，调用其 <code>AbortController.abort()</code>。</li>
+<li>LLM 连接断开，停止产生新的 Token Event。</li>
+</ul>
+</li>
+<li><strong>State Consistency</strong>: 即使还有几个在网络上“飞”的 Token Event 随后到达，由于 State 已经变更为 <code>Listening</code>，Reducer 会根据当前状态丢弃这些迟到的 Token。</li>
+</ol>
+</details>
+<p><strong>练习 4：实现“乐观更新 (Optimistic UI)”</strong>
+用户发送消息后，为了体验流畅，我们希望 UI 立刻显示消息已上屏，而不是等服务器确认。但在 FRP Runtime 中，State 必须由 Event 驱动。如何设计 Event 序列来支持这种体验，同时又能处理发送失败的情况？</p>
+<details>
+<summary>参考答案 (提示)</summary>
+<p>设计两个 Event：</p>
+<ol>
+<li><strong><code>UserSubmitEvent</code> (Intent)</strong>: 用户按下回车。<ul>
+<li>Reducer 处理：将消息加入 <code>state.conversation</code>，但标记状态为 <code>pending</code>（灰色）。</li>
+<li>Effect：发起网络请求发送消息。</li>
+</ul>
+</li>
+<li><strong><code>MessageAckEvent</code> (Fact)</strong>: 服务器确认收到。<ul>
+<li>Reducer 处理：找到那条 <code>pending</code> 消息，标记为 <code>confirmed</code>（实色），并更新 <code>message_id</code>。</li>
+</ul>
+</li>
+<li><strong><code>MessageFailEvent</code> (Fact)</strong>: 发送失败。<ul>
+<li>Reducer 处理：将消息标记为 <code>error</code>，或从 State 中移除并触发 Toast 提示。</li>
+</ul>
+</li>
+</ol>
+</details>
+<hr />
+<h2 id="311-gotchas">3.11 常见陷阱与错误 (Gotchas)</h2>
+<ol>
+<li>
+<p><strong>Trap: Effect 的结果直接修改 State</strong></p>
+<ul>
+<li><em>错误写法</em>: Effect 的回调函数里写 <code>globalState.prop = value</code>。</li>
+<li><em>后果</em>: 绕过了 Event Bus 和 Reducer，导致状态变更不可追踪，时间旅行失效，并发竞态。</li>
+<li><em>修正</em>: Effect 的回调只能 <code>emit(NewEvent)</code>。</li>
+</ul>
+</li>
+<li>
+<p><strong>Trap: 忽略了“去抖动 (Debounce)”在 Runtime 层的必要性</strong></p>
+<ul>
+<li><em>现象</em>: 用户的麦克风有点接触不良，100ms 内触发了 5 次 <code>DeviceConnect/Disconnect</code> 事件。</li>
+<li><em>后果</em>: Reducer 疯狂状态切换，触发了 5 次重连 Effect，导致服务器被 DDoS。</li>
+<li><em>修正</em>: 在 Ingress 层或 Reducer 前置管道使用 <code>debounce</code> 或 <code>throttle</code> 算子，过滤高频噪声。</li>
+</ul>
+</li>
+<li>
+<p><strong>Trap: 混淆逻辑时间与物理时间</strong></p>
+<ul>
+<li><em>场景</em>: 你在做 Timeout 检查，使用了 <code>Date.now()</code>。</li>
+<li><em>后果</em>: 当你以 10 倍速回放测试时，Timeout 逻辑会全部错误，因为物理时间的流逝速度和回放的逻辑时间流逝速度不匹配。</li>
+<li><em>修正</em>: Runtime 内部维护一个 <code>VirtualClock</code>，由 <code>TickEvent</code> 驱动。所有计时逻辑都基于这个虚拟时钟。</li>
+</ul>
+</li>
+<li>
+<p><strong>Trap: 死循环事件</strong></p>
+<ul>
+<li><em>场景</em>: Reducer 收到 Event A -&gt; 发出 Effect B -&gt; Effect B 成功后发出 Event A。</li>
+<li><em>后果</em>: 无限递归，栈溢出或资源耗尽。</li>
+<li><em>修正</em>:<ul>
+<li>在 Event Envelope 中加入 <code>causality_chain</code>，检测到环路则熔断。</li>
+<li>Reducer 逻辑必须收敛：保状态变更后，同样的 Event 不会再次触发同样的 Effect。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter2.html" class="nav-link prev">← Chapter 2｜FRP 基础：用事件流描述 Agent</a><a href="chapter4.html" class="nav-link next">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化 →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

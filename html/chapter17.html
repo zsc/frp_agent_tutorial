@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 17｜参考实现：一个端到端的 FRP Agent</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-17-frp-agent">Chapter 17｜参考实现：一个端到端的 FRP Agent</h1>
+<h2 id="1">1. 开篇与目标</h2>
+<p>设计一个实时 Agent 系统最难的不是调用 <code>openai.chat.completions.create</code>，而是处理“混乱”：用户在模型输出一半时打断、网络波动导致工具超时、并发请求引发的竞态条件、以及 Token 预算的动态管理。</p>
+<p>本章将通过一套完整的<strong>参考架构（Reference Architecture）</strong>来解决这些混乱。我们使用类 Python 的伪代码（结合 Rx/ReactiveX 语义）来构建系统。</p>
+<p><strong>本章学习目标</strong>：</p>
+<ol>
+<li><strong>架构落地</strong>：掌握“六边形架构”在 FRP Agent 中的具体目录结构与职责划分。</li>
+<li><strong>核心循环</strong>：实现从 <code>Input Event</code> 到 <code>State Update</code> 再到 <code>Side Effect</code> 的闭环。</li>
+<li><strong>高级流控</strong>：用代码实现 Speculative Decoding（投机解码）与 Dynamic Batching（动态批处理）。</li>
+<li><strong>全链路集成</strong>：将 RAG、工具调用、预算控制和 UI 渲染整合到一个统一的流中。</li>
+</ol>
+<hr />
+<h2 id="2">2. 系统全景与目录结构</h2>
+<p>我们的架构遵循<strong>纯逻辑内核（Functional Core）</strong>与<strong>命令式外壳（Imperative Shell）</strong>分离的原则。</p>
+<h3 id="21-project-layout">2.1 目录结构 (Project Layout)</h3>
+<div class="codehilite"><pre><span></span><code>/src
+  /agent_core               &lt;-- [纯逻辑层] 无副作用，纯函数，可完全回放测试
+    ├── events.py           # 定义所有事件 (UserAction, SystemSignal, ToolReceipt)
+    ├── state.py            # 定义不可变状态树 (AgentState, ConversationHistory)
+    ├── reducers.py         # 状态转移函数: (State, Event) -&gt; State
+    ├── selectors.py        # 派生状态逻辑: State -&gt; Prompt, State -&gt; UI_ViewModel
+    └── triggers.py         # 复杂的触发器逻辑 (VAD, Interrupt logic)
+
+  /runtime                  &lt;-- [运行时层] 负责流的组装与调度
+    ├── pipeline.py         # 主管道 wiring (merge, scan, map)
+    ├── scheduler.py        # 批处理与速率限制策略
+    └── loop.py             # 主循环入口
+
+  /effects                  &lt;-- [副作用层] 只有这里可以发起网络请求/IO
+    ├── llm_gateway.py      # LLM API 包装 (支持 Stream/Batch/Speculative)
+    ├── tool_runner.py      # 工具执行器 (Sandbox, Retry, CircuitBreaker)
+    ├── rag_service.py      # 向量数据库检索与重排
+    └── memory_store.py     # 持久化存储 (Postgres/Redis)
+
+  /interfaces               &lt;-- [适配器层] 输入输出转换
+    ── websocket_server.py # WebSocket 协议适配
+    ├── audio_processor.py  # 音频流分帧与 VAD 预处理
+    └── debug_console.py    # 开发者后台数据流
+
+  /tests                    &lt;-- [测试层]
+    ├── test_reducers.py    # 单元测试
+    └── sim_scenarios.py    # 虚拟时间回放测试 (Time-Travel Testing)
+</code></pre></div>
+
+<h3 id="22-the-architecture-diagram">2.2 核心数据流架构 (The Architecture Diagram)</h3>
+<p>这个 ASCII 图展示了数据如何在不同层级间流动。</p>
+<div class="codehilite"><pre><span></span><code>       [  Real World  ]
+            | (Inputs: Audio/Text/Click)
+            v
+    +-------+-------+
+    |   Interfaces  |  -&gt; Normalize to Events
+    +-------+-------+
+            |  Stream&lt;Event&gt; (UserEvent, TimerEvent)
+            v
+    +-------+-------+      +----------------------+
+    |  Runtime Hub  |&lt;-----|  Effect Feedback Loop|
+    +-------+-------+      +----------+-----------+
+            |                         ^
+            | (Merge All Streams)     | Stream&lt;Event&gt; (ToolResult, Error)
+            v                         |
+    +-------+-------+                 |
+    |   Agent Core  |                 |
+    | (Scan/Reduce) |                 |
+    +-------+-------+                 |
+            | Stream&lt;State&gt;           |
+            v                         |
+    +-------+-------+      +----------+-----------+
+    | State Selector|-----&gt;|    Effect Runners    |
+    +-------+-------+      | (LLM, Tools, RAG)    |
+            |              +----------------------+
+            | Derived View (UI Frame, Audio Buffer)
+            v
+    +-------+-------+
+    |   Interfaces  |  -&gt; Render to User
+    +-------+-------+
+</code></pre></div>
+
+<hr />
+<h2 id="3-event-bus-stream-loop">3. 核心运行时：Event Bus 与 Stream Loop</h2>
+<p>这是系统的脊梁。我们不使用显式的回调函数，而是定义“流的拓扑结构”。</p>
+<h3 id="31">3.1 定义基本类型</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="c1"># 基础事件定义</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Event</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+
+<span class="c1"># 不可变状态定义</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">AgentState</span><span class="p">:</span>
+    <span class="n">history</span><span class="p">:</span> <span class="nb">list</span>               <span class="c1"># 对话历史</span>
+    <span class="n">variables</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>   <span class="c1"># 提取的槽位 (Slot Filling)</span>
+    <span class="n">pending_actions</span><span class="p">:</span> <span class="nb">list</span>       <span class="c1"># 待执行的副作用意图</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>                 <span class="c1"># &#39;IDLE&#39;, &#39;THINKING&#39;, &#39;ACTING&#39;, &#39;SPEAKING&#39;</span>
+    <span class="n">last_active</span><span class="p">:</span> <span class="nb">float</span>          <span class="c1"># 最后活跃时间</span>
+    <span class="n">token_usage</span><span class="p">:</span> <span class="nb">dict</span>           <span class="c1"># 预算消耗</span>
+
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="32-the-pipeline-wiring">3.2 主管道组装 (The Pipeline Wiring)</h3>
+<p>这段代码是 Agent 的“启动脚本”，它不执行逻辑，只连接电缆。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">build_agent_pipeline</span><span class="p">(</span><span class="n">inputs</span><span class="p">:</span> <span class="n">InputStreams</span><span class="p">,</span> <span class="n">services</span><span class="p">:</span> <span class="n">ServiceContainer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    组装 FRP 管道。</span>
+<span class="sd">    inputs: 包含 user_input$, interrupt$, system_tick$ 等源流</span>
+<span class="sd">    services: 包含 llm, tools, db 等副作用执行器</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># 1. 反馈回路 (Feedback Loop) 的占位符</span>
+    <span class="c1"># 这是一个 Subject，允许我们在管道下游把结果塞回上游</span>
+    <span class="n">action_result_stream</span> <span class="o">=</span> <span class="n">Subject</span><span class="p">()</span>
+
+    <span class="c1"># 2. 合并所有事件源</span>
+    <span class="c1"># - 用户输入</span>
+    <span class="c1"># - 定时器心跳 (用于超时检查、环境播报)</span>
+    <span class="c1"># - 工具/LLM 的执行结果</span>
+    <span class="n">all_events</span><span class="err">$</span> <span class="o">=</span> <span class="n">merge</span><span class="p">(</span>
+        <span class="n">inputs</span><span class="o">.</span><span class="n">user_input</span><span class="err">$</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">UserEvent</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span>
+        <span class="n">inputs</span><span class="o">.</span><span class="n">interrupt</span><span class="err">$</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="n">InterruptEvent</span><span class="p">()),</span>
+        <span class="n">inputs</span><span class="o">.</span><span class="n">system_tick</span><span class="err">$</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">TickEvent</span><span class="p">(</span><span class="n">t</span><span class="p">)),</span>
+        <span class="n">action_result_stream</span>  <span class="c1"># 回环入口</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 3. 核心状态机 (The Brain)</span>
+    <span class="c1"># 所有的业务逻辑都在 reducer 中</span>
+    <span class="n">state</span><span class="err">$</span> <span class="o">=</span> <span class="nb">all</span>\<span class="n">_events</span><span class="err">$</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+        <span class="n">reducer</span><span class="o">=</span><span class="n">core_reducer</span><span class="p">,</span>
+        <span class="n">seed</span><span class="o">=</span><span class="n">AgentState</span><span class="o">.</span><span class="n">initial</span><span class="p">()</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">share</span><span class="p">()</span>  <span class="c1"># 广播给多个消费者</span>
+
+    <span class="c1"># 4. 副作用意图识别 (Intent Detection)</span>
+    <span class="c1"># 检查状态是否暗示需要执行外部操作 (调用 LLM, 搜索 DB)</span>
+    <span class="n">effect_intent</span><span class="err">$</span> <span class="o">=</span> <span class="n">state</span><span class="err">$</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">pending_actions</span><span class="p">)</span> \
+                           <span class="o">.</span><span class="n">distinct_until_changed</span><span class="p">()</span> \
+                           <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">actions</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">actions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># 5. 作用分发与执行 (Side Effect Dispatcher)</span>
+    <span class="c1"># 将 Intent 路由给不同的执行器，并将结果发回 action_result_stream</span>
+    <span class="n">effect_intent</span><span class="err">$</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">actions</span><span class="p">:</span> <span class="n">dispatch_effects</span><span class="p">(</span><span class="n">actions</span><span class="p">,</span> <span class="n">services</span><span class="p">,</span> <span class="n">action_result_stream</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 6. UI 渲染流</span>
+    <span class="c1"># 使用 throttle 避免 UI 刷新过快（如 60fps）</span>
+    <span class="n">ui_view</span><span class="err">$</span> <span class="o">=</span> <span class="n">state</span><span class="err">$</span><span class="o">.</span><span class="n">throttle_time</span><span class="p">(</span><span class="mf">0.016</span><span class="p">)</span> \
+                     <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">render_ui_view_model</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">ui_view</span><span class="err">$</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-promptsignal-prompt">4. PromptSignal：从状态到动态 Prompt</h2>
+<p>在 FRP 架构中，Prompt 不是硬编码的字符串，而是<strong>状态的函数</strong>。</p>
+<h3 id="41-prompt">4.1 动态 Prompt 构造器</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">derive_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Selector 函数：纯函数，(State) -&gt; Messages</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># 1. 动态系统指令 (System Prompt)</span>
+    <span class="c1"># 包含时间、位置、当前模式</span>
+    <span class="n">system_content</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">base_prompt_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">time</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">clock_now</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="n">location</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">user_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;Unknown&#39;</span><span class="p">),</span>
+        <span class="n">tool_status</span><span class="o">=</span><span class="n">format_tool_status</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 2. 注入短期记忆与 RAG 上下文</span>
+    <span class="c1"># 注意：RAG 的结果是在之前的 reducer 步骤中存入 state 的</span>
+    <span class="n">context_msgs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">rag_evidence</span><span class="p">:</span>
+        <span class="n">context_msgs</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Relevant Context:</span><span class="se">\n</span><span class="si">{</span><span class="n">format_evidence</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">rag_evidence</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">})</span>
+
+    <span class="c1"># 3. 历史记录压缩 (Context Budgeting)</span>
+    <span class="c1"># 只有这里做截断，保持 State 里的 history 是完整的</span>
+    <span class="n">visible_history</span> <span class="o">=</span> <span class="n">smart_trim</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">history</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">context_window</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">system_content</span><span class="p">}]</span> <span class="o">+</span> \
+           <span class="n">context_msgs</span> <span class="o">+</span> \
+           <span class="n">visible_history</span>
+</code></pre></div>
+
+<hr />
+<h2 id="5-tool-effect">5. Tool Effect 执行器与回执</h2>
+<p>工具调用是异步的、易错的。我们需要优雅地处理它们。</p>
+<h3 id="51-reducer">5.1 Reducer 中的意图生成</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">core_reducer</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="c1"># ... 省略其他事件处理 ...</span>
+
+    <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;LLM_RESPONSE_CHUNK&quot;</span><span class="p">:</span>
+        <span class="c1"># 如果 LLM 输出表明要调用工具</span>
+        <span class="k">if</span> <span class="n">is_tool_call_token</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">):</span>
+            <span class="c1"># 将“待执行工具”加入 pending_actions</span>
+            <span class="c1"># 注意：这里不执行工具，只描述“我想执行工具”</span>
+            <span class="n">new_action</span> <span class="o">=</span> <span class="n">ToolAction</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">(),</span>
+                <span class="n">tool_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+                <span class="n">params</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span>
+                <span class="n">pending_actions</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">pending_actions</span> <span class="o">+</span> <span class="p">[</span><span class="n">new_action</span><span class="p">],</span>
+                <span class="n">status</span><span class="o">=</span><span class="s1">&#39;ACTING&#39;</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">state</span>
+</code></pre></div>
+
+<h3 id="52-the-runner">5.2 执行器 (The Runner)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">dispatch_effects</span><span class="p">(</span><span class="n">actions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Action</span><span class="p">],</span> <span class="n">services</span><span class="p">,</span> <span class="n">result_sink</span><span class="p">:</span> <span class="n">Subject</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">actions</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">ToolAction</span><span class="p">):</span>
+            <span class="c1"># 启动异步任务</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
+                <span class="n">run_tool_safely</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">services</span><span class="o">.</span><span class="n">tools</span><span class="p">,</span> <span class="n">result_sink</span><span class="p">)</span>
+            <span class="p">)</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">run_tool_safely</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">tool_registry</span><span class="p">,</span> <span class="n">result_sink</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Chapter 6: Circuit Breaker &amp; Retry 逻辑在这里封装</span>
+        <span class="n">tool_func</span> <span class="o">=</span> <span class="n">tool_registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">tool_name</span><span class="p">)</span>
+        <span class="n">result_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tool_func</span><span class="p">(</span><span class="o">**</span><span class="n">action</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;TOOL_RESULT&quot;</span><span class="p">,</span>
+            <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;action_id&quot;</span><span class="p">:</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>  <span class="c1"># 关联 ID</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">result_data</span><span class="p">,</span>
+                <span class="s2">&quot;receipt&quot;</span><span class="p">:</span> <span class="n">generate_receipt</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">result_data</span><span class="p">)</span> <span class="c1"># 生成回执</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;TOOL_ERROR&quot;</span><span class="p">,</span>
+            <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;action_id&quot;</span><span class="p">:</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span>
+        <span class="p">)</span>
+
+    <span class="c1"># 将结果推回主管道</span>
+    <span class="n">result_sink</span><span class="o">.</span><span class="n">on_next</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-speculative-decoding-batching">6. Speculative Decoding 与 Batching</h2>
+<p>为了极致的性能，我们在 <code>Effect</code> 层引入高级流控。</p>
+<h3 id="61-speculative-execution-frp">6.1 Speculative Execution (投机执行) 的 FRP 实现</h3>
+<p>假设我们要在用户说话时预加载可能的工具（例如，用户提到“天气”，我们不仅预加载天气工具，甚至可以投机性地发起查询）。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 在 pipeline 组装层</span>
+<span class="k">def</span> <span class="nf">attach_speculative_layer</span><span class="p">(</span><span class="n">user_input_stream</span><span class="err">$</span><span class="p">,</span> <span class="n">services</span><span class="p">):</span>
+
+    <span class="c1"># 1. 快速意图识别流 (使用小模型)</span>
+    <span class="n">intent_stream</span><span class="err">$</span> <span class="o">=</span> <span class="n">user</span>\<span class="n">_input</span>\<span class="n">_stream</span><span class="err">$</span> \
+        <span class="o">.</span><span class="n">buffer_time</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> \  <span class="c1"># 每 0.5 秒采样一次</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">buf</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">switch_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">text</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">small_model</span><span class="o">.</span><span class="n">predict_intent</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+
+    <span class="c1"># 2. 投机性预热 (Prefetch)</span>
+    <span class="n">intent_stream</span><span class="err">$</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="k">lambda</span> <span class="n">intent</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="n">intent</span> <span class="o">==</span> <span class="s1">&#39;search&#39;</span><span class="p">:</span>
+            <span class="n">services</span><span class="o">.</span><span class="n">search_engine</span><span class="o">.</span><span class="n">warmup</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">intent</span> <span class="o">==</span> <span class="s1">&#39;db_query&#39;</span><span class="p">:</span>
+            <span class="n">services</span><span class="o">.</span><span class="n">db_connection</span><span class="o">.</span><span class="n">ensure_active</span><span class="p">()</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<h3 id="62-dynamic-batching-rag">6.2 Dynamic Batching (RAG 向量化)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">EmbeddingService</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request_subject</span> <span class="o">=</span> <span class="n">Subject</span><span class="p">()</span>
+
+        <span class="c1"># 内部批处理逻辑</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request_subject</span> \
+            <span class="o">.</span><span class="n">buffer_with_time_or_count</span><span class="p">(</span><span class="n">time_span</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">batch</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">flat_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_batch_request</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">share</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_embedding</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="c1"># 返回一个 Future/Promise，等待流的响应</span>
+        <span class="n">req_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request_subject</span><span class="o">.</span><span class="n">on_next</span><span class="p">({</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">req_id</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_response_stream</span> \
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">res</span><span class="p">:</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">req_id</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_execute_batch_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="n">texts</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+        <span class="c1"># 真正发起一次 API 调用</span>
+        <span class="n">vectors</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_client</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span>
+        <span class="c1"># 重新拆分结果</span>
+        <span class="k">return</span> <span class="p">[{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="s2">&quot;vector&quot;</span><span class="p">:</span> <span class="n">vec</span><span class="p">}</span> 
+                <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">vec</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">vectors</span><span class="p">)]</span>
+</code></pre></div>
+
+<hr />
+<h2 id="7-rag">7. RAG 管道与流式证据</h2>
+<p>实现“边生成，边展示引用”的效果。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">rag_effect_runner</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">rag_service</span><span class="p">,</span> <span class="n">result_sink</span><span class="p">):</span>
+    <span class="c1"># RAG 不仅仅返回文本，还返回 Stream&lt;Evidence&gt;</span>
+    <span class="n">evidence_stream</span> <span class="o">=</span> <span class="n">rag_service</span><span class="o">.</span><span class="n">search_stream</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+    <span class="n">evidence_stream</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span>
+        <span class="n">on_next</span><span class="o">=</span><span class="k">lambda</span> <span class="n">doc</span><span class="p">:</span> <span class="n">result_sink</span><span class="o">.</span><span class="n">on_next</span><span class="p">(</span>
+            <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;RAG_DOC_FOUND&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">on_completed</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">result_sink</span><span class="o">.</span><span class="n">on_next</span><span class="p">(</span>
+            <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;RAG_SEARCH_FINISHED&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{})</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+<span class="c1"># 在 Reducer 中</span>
+<span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;RAG_DOC_FOUND&quot;</span><span class="p">:</span>
+        <span class="c1"># 增量更新证据列表，UI 可以立即渲染这个新文档</span>
+        <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span>
+            <span class="n">evidence_list</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">evidence_list</span> <span class="o">+</span> <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="c1"># ...</span>
+</code></pre></div>
+
+<hr />
+<h2 id="8-trigger-dsl-vad">8. Trigger DSL (类似 VAD 的触发器)</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">operators</span> <span class="kn">import</span> <span class="n">debounce</span><span class="p">,</span> <span class="n">throttle</span>
+
+<span class="k">def</span> <span class="nf">create_advanced_trigger</span><span class="p">(</span><span class="n">audio_energy</span><span class="err">$</span><span class="p">,</span> <span class="n">text</span>\<span class="n">_stream</span><span class="err">$</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    定义什么时候 Agent 应该打断用户或开始说话。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># 1. 物理层 VAD：声音能量 &gt; 阈值，持续 200ms</span>
+    <span class="n">is_speaking</span><span class="err">$</span> <span class="o">=</span> <span class="n">audio</span>\<span class="n">_energy</span><span class="err">$</span> \
+        <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">distinct_until_changed</span><span class="p">()</span> \
+        <span class="o">.</span><span class="n">debounce</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span> 
+
+    <span class="c1"># 2. 语义层 VAD：检测到完整句子结束符 (Semantic Endpointing)</span>
+    <span class="n">is_sentence_end</span><span class="err">$</span> <span class="o">=</span> <span class="n">text</span>\<span class="n">_stream</span><span class="err">$</span> \
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;!&#39;</span><span class="p">)))</span>
+
+    <span class="c1"># 3. 组合逻辑</span>
+    <span class="c1"># 如果检测到“说话结束” 且 “句子完整”，触发 TURN_END</span>
+    <span class="n">turn_end</span><span class="err">$</span> <span class="o">=</span> <span class="ow">is</span>\<span class="n">_speaking</span><span class="err">$</span> \
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">speaking</span><span class="p">:</span> <span class="n">speaking</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">with_latest_from</span><span class="p">(</span><span class="n">is_sentence_end</span><span class="err">$</span><span class="p">)</span> \
+        <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;USER_TURN_END&quot;</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">turn_end</span><span class="err">$</span>
+</code></pre></div>
+
+<hr />
+<h2 id="9">9. 本章小结</h2>
+<p>本章通过伪代码构建了一个完整的 FRP Agent 骨架：</p>
+<ol>
+<li><strong>Event Bus</strong> 是血管，连接所有组件。</li>
+<li><strong>Reducer</strong> 是心脏，纯净且负责状态维护。</li>
+<li><strong>Selector</strong> 是大脑皮层，将状态转化为 Prompt 和 UI。</li>
+<li><strong>Effect Runners</strong> 是四肢，负责处理肮脏的现实世界（IO/API）。</li>
+</ol>
+<p>这个架构的威力在于：</p>
+<ul>
+<li><strong>可测试性</strong>：你可以编写一个 JSON 文件包含一系列 Event，喂给 Reducer，验证最终状态是否正确完全不需要 Mock 网络请求。</li>
+<li><strong>可扩展性</strong>：想加一个“情绪检测”模块？只需订阅 <code>audio_stream$</code>，产生 <code>EMOTION_DETECTED</code> 事件，并在 Reducer 中处理即可，无需修改现有的 LLM 逻辑。</li>
+<li><strong>鲁棒性</strong>：通过 <code>timeout</code>, <code>retry</code>, <code>circuit_breaker</code> 等算子，系统天生具备容错能力。</li>
+</ul>
+<hr />
+<h2 id="10">10. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<ol>
+<li><strong>Schema 设计</strong>：
+    设计 <code>ToolReceipt</code> 的数据结构。要求包含：调用工具的原始参数、工具返回的结果、以及一个 summary 字段（用于给 LLM 看的简化版结果，节省 Token）。
+    <details markdown="1">
+    <summary>参考答案</summary></li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ToolReceipt</span><span class="p">:</span>
+    <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">call_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="c1"># 原始输入输出（用于日志和 Debug）</span>
+    <span class="n">raw_input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">raw_output</span><span class="p">:</span> <span class="n">Any</span>
+
+    <span class="c1"># 压缩视图（用于 Prompt）</span>
+    <span class="n">summary_for_llm</span><span class="p">:</span> <span class="nb">str</span> 
+
+    <span class="c1"># 状态元数据</span>
+    <span class="n">is_success</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">execution_time_ms</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>&lt;/details&gt;
+</code></pre></div>
+
+<ol start="2">
+<li><strong>心跳实现</strong>：
+    使用你熟悉的语言（或伪代码），写一个 <code>tick_stream</code>，每秒发出一个事件，但如果 <code>state.status == 'SLEEPING'</code>，则停止发射事件以节省资源。
+    <details markdown="1">
+    <summary>参考答案</summary></li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 需要 switch_map 配合状态流</span>
+<span class="n">tick_stream</span><span class="err">$</span> <span class="o">=</span> <span class="n">state</span>\<span class="n">_stream</span><span class="err">$</span> \
+    <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">status</span><span class="p">)</span> \
+    <span class="o">.</span><span class="n">distinct_until_changed</span><span class="p">()</span> \
+    <span class="o">.</span><span class="n">switch_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">status</span><span class="p">:</span> 
+        <span class="n">interval</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="s1">&#39;SLEEPING&#39;</span> <span class="k">else</span> <span class="n">empty</span><span class="p">()</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>&lt;/details&gt;
+</code></pre></div>
+
+<ol start="3">
+<li><strong>日志脱敏</strong>：
+    实现一个简单的 Operator <code>mask_pii</code>，它接收 Event 流，将 payload 中的 <code>phone_number</code> 和 <code>email</code> 字段替换为 <code>***</code>。
+    <details markdown="1">
+    <summary>提示</summary>
+    这是一个 <code>map</code> 操作。尽量做深拷贝（deep copy）以避免修改原始事件影响其他消费者。可以使用正则表达式匹配常见的 PII 模式。
+    </details></li>
+</ol>
+<h3 id="_2">挑战题</h3>
+<ol start="4">
+<li>
+<p><strong>实现“乐观 UI 更新 (Optimistic UI Update)”</strong>：
+    当用户发送消息时，UI 立即显示“发送成功”（灰色状态），而不需要等待服务器确认。请描述在 FRP Reducer 中如何处理 <code>USER_SEND</code>（乐观）和 <code>SERVER_ACK</code>（确认）这两个事件，以及如果收到 <code>SERVER_ERROR</code> 如何回滚。
+    <details markdown="1">
+    <summary>提示</summary></p>
+<ol>
+<li><code>USER_SEND</code>: append message to history with <code>status='pending'</code>.</li>
+<li><code>SERVER_ACK</code>: find message by ID, update <code>status='sent'</code>.</li>
+<li><code>SERVER_ERROR</code>: find message by ID, update <code>status='failed'</code> or remove it from history (rollback).
+关键在于每条消息需要一个临时的客户端生成的 UUID。
+</details></li>
+</ol>
+</li>
+<li>
+<p><strong>设计 Token 预算熔断器</strong>：
+    在 <code>dispatch_effects</code> 之前拦截 LLM 请求。如果 <code>current_session_tokens &gt; MAX_BUDGET</code>，则拦截请求，并自动派发一个 <code>Event("SYSTEM_MSG", "Budget Exceeded")</code> 给 Reducer，而不是调用 LLM API。
+    <details markdown="1">
+    <summary>提示</summary>
+    使用 <code>compose</code> 或 <code>pipe</code> 在流中插入逻辑。</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="n">llm_intent</span><span class="err">$</span>
+    <span class="o">.</span><span class="n">with_latest_from</span><span class="p">(</span><span class="n">budget_status</span><span class="err">$</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">budget</span><span class="p">):</span> 
+         <span class="k">if</span> <span class="n">budget</span><span class="o">.</span><span class="n">remaining</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="n">SystemEvent</span><span class="p">(</span><span class="s2">&quot;BUDGET_EXCEEDED&quot;</span><span class="p">)</span>
+         <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="n">intent</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>&lt;/details&gt;
+</code></pre></div>
+
+<hr />
+<h2 id="11-gotchas">11. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="111-infinite-loops">11.1 无限递归 (Infinite Loops)</h3>
+<p><strong>场景</strong>：Reducer 更新状态 -&gt; 状态触发 Effect -&gt; Effect 产生 Event -&gt; Event 触发 Reducer。
+<strong>陷阱</strong>：如果不小心，这会变成永动机。例如：Effect 失败发出 ERROR 事件，Reducer 收到 ERROR 决定重试，再次触发 Effect。
+<strong>对策</strong>：</p>
+<ol>
+<li><strong>重试计数器</strong>：在 Event payload 或 State 中必须包含 <code>retry_count</code>。</li>
+<li><strong>Base Condition</strong>：Reducer 必须有逻辑 <code>if retry_count &gt; 3: return state (give up)</code>。</li>
+</ol>
+<h3 id="112-ghost-subscriptions">11.2 幽灵订阅 (Ghost Subscriptions)</h3>
+<p><strong>场景</strong>：在 Web 环境中，组件卸载了（如用户关闭了标签页或切换了由），但后台的 Stream 订阅还在运行，继续消耗 CPU 处理 VAD 或网络请求。
+<strong>对策</strong>：</p>
+<ol>
+<li>确保所有的 <code>subscribe()</code> 返回的 <code>Subscription</code> 对象被收集。</li>
+<li>在销毁生命周期（如 <code>dispose()</code> 或 <code>__exit__</code>）中调用 <code>subscription.unsubscribe()</code>。</li>
+<li>使用 <code>take_until(destroy_signal$)</code> 模式自动管理生命周期。</li>
+</ol>
+<h3 id="113">11.3 状态的可变性污染</h3>
+<p><strong>场景</strong>：在 Reducer 中直接修改了 <code>state.history.append(...)</code> 而不是返回一个新的 State 对象。
+<strong>后果</strong>：由于 FRP 经常使用 <code>distinct_until_changed</code> 来优化性能，如果对象引用没变（只是内部内容变了），下游可能不会检测到变化，导致 UI 不刷新。
+<strong>对策</strong>：始终使用 <code>dataclasses.replace</code> 或类似库（如 immer.js / pyrsistent）来保证不可变性。</p>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter16.html" class="nav-link prev">← Chapter 16｜评测与持续迭代：从“能用”到“好用”</a><a href="chapter18.html" class="nav-link next">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone) →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

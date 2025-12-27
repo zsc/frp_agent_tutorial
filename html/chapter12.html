@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 12｜Token Budget 控制：预算就是产品体验</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-12token-budget">Chapter 12｜Token Budget 控制：预算就是产品体验</h1>
+<h2 id="1-token-budget">1. 开篇：为什么 Token Budget 是核心体验问题？</h2>
+<p>在许多 LLM 应用开发者的初级认知中，Token 限制往往只被视为“成本控制（Cost Control）”或“技术限制（Context Window Limit）”。然而，在实时 Agent 系统中，<strong>Token Budget 是直接决定产品体验（UX）的核心资源</strong>。</p>
+<p>想象一下以下场景：</p>
+<ol>
+<li><strong>截断灾难</strong>：用户正在听一个精彩的故事，结果因为 token 耗尽，故事在“关键揭秘”前戛然而止。</li>
+<li><strong>延迟爆炸</strong>：为了回答一个简单问题，Agent 错误地加载了 100 篇文档进入上下文，导致首字延迟（TTFT）飙升到 10 秒。</li>
+<li><strong>智商掉线</strong>：因为前面的无关对占满了上下文窗口，导致 Agent “忘记”了用户的核心指令。</li>
+</ol>
+<p>在 FRP（Functional Reactive Programming）架构中，我们将 Token Budget 视为一种<strong>随时间变化的信号（Signal）</strong>，而不是一个静态的配置项。它像汽车的油表或游戏的魔法值（Mana）一样，需要实时观测、动态预测和精细管理。</p>
+<p><strong>本章目标</strong>：学习如何建立一套反应式的 Token 预算系统，通过 FRP 算子实现流式扣费、动态截断、分级策略和风险熔断，确保 Agent 在有限资源下提供最优的智能表现。</p>
+<hr />
+<h2 id="2">2. 核心论述</h2>
+<h3 id="21-token">2.1 预算分解：你的 Token 去哪了？</h3>
+<p>要控制预算，首先要建立清晰的“账本”。在实时 Agent 中，Token 消耗不仅仅是 <code>Prompt + Completion</code> 那么简单。</p>
+<p>我们将预算 $B_{total}$ 分解为以下流动的分量：</p>
+<p>$$ B_{total} = P_{sys} + P_{ctx} + P_{rag} + P_{tool} + C_{think} + C_{reply} $$</p>
+<ul>
+<li><strong>$P_{sys}$ (System Instructions)</strong>: 固定的“人设”和基指令。通常是常数，但随着 Agent 功能增加会膨胀。</li>
+<li><strong>$P_{ctx}$ (Conversation Context)</strong>: 历史对话记录。随时间线性增长，是预算杀手。</li>
+<li><strong>$P_{rag}$ (Retrieved Knowledge)</strong>: 动态注入的参考资料。波动性极大。</li>
+<li><strong>$P_{tool}$ (Tool Definitions &amp; Receipts)</strong>: 工具的 Schema 定义和执行结果回执。</li>
+<li><strong>$C_{think}$ (Reasoning/CoT)</strong>: 模型内部思维链（用户不可见，但消耗资源）。</li>
+<li><strong>$C_{reply}$ (User Response)</strong>: 最终呈现给用户的回复。</li>
+</ul>
+<p><strong>Rule of Thumb</strong>: 始终为 $C_{reply}$ 预留至少 20% 的安全边际，否则容易出现“话没说完”的尴尬。</p>
+<h3 id="22-vs">2.2 在线估算：精确 vs. 速度</h3>
+<p>在实时流处理中，每次都调用 HuggingFace 的 Tokenizer 进行精确计数是非常昂贵的（CPU 密集型），会阻塞事件循环。</p>
+<p>FRP 架构推荐采用 <strong>双层估算策略</strong>：</p>
+<ol>
+<li><strong>快速估算（Fast Path）</strong>: 使用字符数/单词数进行线性映射（例如：<code>1 token ≈ 0.75 words</code>  <code>1 token ≈ 1.5 chars</code>）。这是一个低延迟的 <code>map</code> 操作。</li>
+<li><strong>异步校准（Async Calibration）</strong>: 在后台闲时或关键节点（如发起 LLM 请求前），使用真实 Tokenizer 进行校准，更新 <code>BudgetSignal</code>。</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">A</span><span class="p">[</span><span class="n">用户输入流</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">(</span><span class="n">快速估算</span><span class="w"> </span><span class="n">map</span><span class="p">)</span>
+<span class="w">    </span><span class="n">B</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C</span><span class="p">{</span><span class="n">Budget</span><span class="w"> </span><span class="n">Guard</span><span class="p">}</span>
+<span class="w">    </span><span class="n">C</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Pass</span><span class="o">|</span><span class="w"> </span><span class="n">D</span><span class="p">[</span><span class="n">LLM</span><span class="w"> </span><span class="n">Request</span><span class="p">]</span>
+<span class="w">    </span><span class="n">D</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">E</span><span class="p">(</span><span class="n">异步精确计数</span><span class="p">)</span>
+<span class="w">    </span><span class="n">E</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">F</span><span class="p">[</span><span class="n">更新</span><span class="w"> </span><span class="n">BudgetSignal</span><span class="p">]</span>
+<span class="w">    </span><span class="n">F</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">C</span>
+</code></pre></div>
+
+<h3 id="23-frp-budgetsignal-guard-operator">2.3 FRP 实现：BudgetSignal 与 Guard Operator</h3>
+<p>在 FRP 中，预算控制不是散落在各处的 <code>if (tokens &gt; limit)</code> 代码，而是一个统一的<strong>信号与卫语句</strong>机制。</p>
+<h4 id="231-budgetsignal">2.3.1 BudgetSignal</h4>
+<p>这是一个 <code>Signal&lt;UsageStats&gt;</code>，它整合了当前的上下文窗口占用情况和累计消费情况。它会对每一个进入系统的 Token 事件（无论是用户输入、RAG 检索结果，还是工具回执）做出反应。</p>
+<h4 id="232-guard-operator">2.3.2 Guard Operator (卫语句算子)</h4>
+<p>我们定义一个自定义算子 <code>ensureBudget(costEstimate, strategy)</code>。当一个高成本操作（如“检索 50 篇文档”）试图执行时，该算子会检查 <code>BudgetSignal</code>：</p>
+<ul>
+<li><strong>充足</strong>：事件通过。</li>
+<li><strong>不足</strong>：<ul>
+<li><strong>Reject</strong>: 直接抛出错误（"Token 不足"）。</li>
+<li><strong>Trim</strong>: 触发压缩策略，修改事件载荷（Payload），减少 Token 消耗后重试。</li>
+<li><strong>Wait</strong>: (少见) 等待配额刷新（如每分钟配额）。</li>
+</ul>
+</li>
+</ul>
+<p><strong>ASCII 示意图：预算流控</strong></p>
+<div class="codehilite"><pre><span></span><code>Input Stream (High Cost)
+      |
+      v
++-----+-----+
+|  Guard    | &lt;--- BudgetSignal (State: 3500/4000 used)
++-----+-----+
+      |
+      +-----&gt; [Check: Need 800 tokens?]
+      |          |
+      |          +-- NO (3500+800 &gt; 4000) --&gt; [Strategy: Summarize History]
+
+      |          +-- NO (3500+800 &gt; 4000) --&gt; [Strategy: Summarize History]
+      |                                           |
+      |                                           v
+      |          +-- YES (After Summary) --&gt; [Pass: Cost 200]
+      |          |
+
+      v          v
+   Execute    Execute
+</code></pre></div>
+
+<h3 id="24-fifo">2.4 动态裁剪策略：不仅仅是 FIFO</h3>
+<p>当预算报警时，直丢弃最早的对话（FIFO）是最粗糙的手段。Agent 需要更智能的策略：</p>
+<ol>
+<li><strong>语义压缩（Summarization Stream）</strong>:<ul>
+<li>当上下文达到阈值（如 70%），触发一个并行的“摘要 Agent”。</li>
+<li>将历史对话折叠为 Summary Signal，替换原始 Message List。</li>
+</ul>
+</li>
+<li><strong>引用替代（Reference over Injection）</strong>:<ul>
+<li>RAG 不直接把全文塞进 Prompt。</li>
+<li>先塞入 "Document Titles + Abstracts"。</li>
+<li>只有当模型明确请求 "Read Document 3" 时，再通过工具调用加载全文（即：按需付费）。</li>
+</ul>
+</li>
+<li><strong>分段回答（Segmentation）</strong>:<ul>
+<li>如果用户要求写长文，强制 Agent 将任务拆解为 "Outline" -&gt; "Section 1" -&gt; "Section 2"。</li>
+<li>每一步只消耗当前段落的预算。</li>
+</ul>
+</li>
+</ol>
+<h3 id="25-gating">2.5 风险动作预算 (Gating)</h3>
+<p>某些操作不仅消耗 Token，还消耗“信誉”或“金钱”（如调用付费 API）。
+我们可以为不同类型的 Token 设立子预算（Sub-budgets）：</p>
+<ul>
+<li><strong>Thinking Tokens</strong>: 限制 CoT 的长度，防止模型陷入无限循环的自言自语。</li>
+<li><strong>Tool Tokens</strong>: 限制工具回执的大小（防止 <code>cat huge_file.txt</code> 撑爆上下文）。</li>
+</ul>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>Token Budget 是状态，不是常量</strong>：它应该被建模为 FRP 中的 Signal，随时间动态波动。</li>
+<li><strong>预算即体验</strong>：合理的预算控制能降低首字延迟、防止截断、保持模型长期记忆的“智商”。</li>
+<li><strong>双层估算</strong>：前端/高频处用启发式估算（Char count），后端/关键处用 Tokenizer 精确校准。</li>
+<li><strong>Guard 模式</strong>：使用 FRP 算子拦截高成本操作，在执行前进行“预算协商（Negotiation）”——要么削减载荷，要么拒绝执行。</li>
+<li><strong>策略分级</strong>：从简单的 FIFO 丢弃，到进阶的 Summarization 和 RAG 的按需加载，策略越复杂，上下文利用率越高。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<p><strong>Q1. 预算计算</strong>
+假设 context window 是 8192 tokens。</p>
+<ul>
+<li>System prompt: 500 tokens</li>
+<li>Tool definitions: 800 tokens</li>
+<li>用户当前输入: 100 tokens</li>
+<li>历史记录: 5000 tokens</li>
+<li>你需要预留 20% 给模型生成回复。
+请计算：</li>
+</ul>
+<ol>
+<li>当前已用 tokens 是多少？</li>
+<li>剩余给 RAG（检索材料）的 tokens 额度是多少？</li>
+</ol>
+<details>
+<summary>点击查看提示与答案</summary>
+<p><strong>提示</strong>：</p>
+<ol>
+<li>计算固定成本和历史成本之和。</li>
+<li>计算预留额度（基于 8192 总量）。</li>
+<li>RAG 额度 = 总量 - (固定+历史+用户输入+预留)。</li>
+</ol>
+<p><strong>答案</strong>：</p>
+<ol>
+<li><strong>当前已用</strong>: 500 (Sys) + 800 (Tools) + 5000 (History) + 100 (User) = <strong>6400 tokens</strong>。</li>
+<li><strong>预留额度</strong>: 8192 * 20% ≈ 1638 tokens。</li>
+<li><strong>RAG 可用额度</strong>: 8192 - 6400 - 1638 = <strong>154 tokens</strong>。
+    <em>结论</em>：空间极小，必须触发“历史记录压缩”策略，否则几乎无法进行 RAG。</li>
+</ol>
+</details>
+<p><strong>Q2. 快速估算器</strong>
+编写一个简单的伪代码函数 <code>estimate_tokens(text: string) -&gt; int</code>，假设中文占 1.5 tokens，英文单词占 1.3 tokens。如何处理混合文本？</p>
+<details>
+<summary>点击查看提示与答案</summary>
+<p><strong>提示</strong>：
+不需要完美，只需要比 Tokenizer 快。可以简单地按字符类型分类，或者取一个加权平均值。</p>
+<p><strong>答案</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">estimate_tokens</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="c1"># Rule of thumb implementation</span>
+    <span class="c1"># 假设平均 1 char ≈ 1 token (保守估计，通常 1.5 chars ≈ 1 token)</span>
+    <span class="c1"># 更好的近似：len(text) / 2.5 (for purely English) ~ len(text) / 1.5 (for Chinese)</span>
+    <span class="c1"># 混合环境简单策略：</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.7</span><span class="p">)</span>
+</code></pre></div>
+
+<p><em>注：FRP 中这个函数会作为 map 算子挂载在 input stream 上。</em></p>
+</details>
+<p><strong>Q3. 识别浪费</strong>
+在日志中发现某次对话消耗了 10,000 tokens，但用户得到的回复只有 "对不起，我不知道"。请列举三种可能导致这种“高费低效”的原因。</p>
+<details>
+<summary>点击查看提示与答案</summary>
+<p><strong>答案</strong>：</p>
+<ol>
+<li><strong>无效 RAG</strong>：检索了 9000 tokens 的文档，但全部无关，模型阅读后发现无答案。</li>
+<li><strong>工具输出爆炸</strong>：个工具（如数据库查询）返回了数千行的 JSON，模型仅仅为了说“没找到”。</li>
+<li><strong>Prompt 冗余</strong>：System Prompt 里包含了大量未被触发的 Few-Shot 示例或过期的历史记忆。</li>
+</ol>
+</details>
+<hr />
+<h3 id="_2">挑战题</h3>
+<p><strong>Q4. 设计 <code>BudgetSignal</code> 的数据结构</strong>
+在一个支持多模态（文本+图片）和 RAG 的 Agent 中，设计 <code>BudgetSignal</code> 内部持有的状态对象 Schema。需要考虑到不同模型（如 GPT-4 vs Claude-3）的计费差异吗？</p>
+<details>
+<summary>点击查看提示与答案</summary>
+<p><strong>提示</strong>：
+Schema 应该包含“即时快照”和“累计消耗”。图片通常按分辨率计费（fixed tokens）。</p>
+<p><strong>答案</strong>：</p>
+<div class="codehilite"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">BudgetState</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// 瞬时状态：用于 Context Window 控制</span>
+<span class="w">  </span><span class="nx">contextWindow</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">capacity</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w">      </span><span class="c1">// e.g., 128k</span>
+<span class="w">    </span><span class="nx">used</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w">          </span><span class="c1">// 当前总占用</span>
+<span class="w">    </span><span class="nx">breakdown</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">system</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">history</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">rag</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">      </span><span class="nx">pendingInput</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// 计状态：用于计费和配额控制</span>
+<span class="w">  </span><span class="nx">sessionUsage</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">inputTokens</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">outputTokens</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">costEstimate</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w">  </span><span class="c1">// USD</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// 策略标志</span>
+<span class="w">  </span><span class="nx">pressureLevel</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;LOW&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;MEDIUM&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;CRITICAL&#39;</span><span class="p">;</span><span class="w"> </span><span class="c1">// 决定是否开启压缩</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><em>差异化</em>：最好将具体的 Cost 计算逻辑抽象为 Strategy 模式，因为不同模型的 Context Window 和价格差异巨大，但 <code>used</code> vs <code>capacity</code> 的比例逻辑是通用的。</p>
+</details>
+<p><strong>Q5. 竞态条件与预算 (Race Condition)</strong>
+在 FRP 系统中，并行发起了两个工具调用请求（Tool Call A 和 Tool Call B）。
+初始剩余预算：1000 tokens。
+A 预计消耗 600，B 预计消耗 600。
+如果不加控制，两者可能都会通过 <code>ensureBudget</code> 检查（因为检查时预算都看似足够），导致最终超出上下文限制。
+请利用 FRP 算子设计一种机制解决这个问题。</p>
+<details>
+<summary>点击查看提示与答案</summary>
+<p><strong>提示</strong>：
+这需要“预扣费（Reserve/Commit）”机制，或者行化处理。</p>
+<p><strong>答案</strong>：
+<strong>方案：预扣费（Reservation Pattern）</strong></p>
+<ol>
+<li><code>BudgetSignal</code> 不仅维护 <code>used</code>，还维护 <code>reserved</code>。</li>
+<li>当 Tool A 触发时，执行 <code>reserve(600)</code>。此时 <code>available = total - used - reserved</code> 变为 400。</li>
+<li>当 Tool B 触发时，检查 <code>available</code> (400) &lt; 600，检查失败。</li>
+<li>Tool B 进入等待队列或被拒绝。</li>
+<li>Tool A 完成后，<code>reserved -= 600</code>, <code>used += actual_cost</code>。</li>
+</ol>
+<p><strong>FRP 实现</strong>：
+使用 <code>scan</code> 算子维护状态，所有消耗请求必须先发送 <code>ReserveEvent</code> 到该 scan loop，获取 <code>Approval</code> 信号后才能执行副作用。</p>
+</details>
+<p><strong>Q6. 实现 "Smart Truncation" (智能截断)</strong>
+你有一个历史消息列表的 Stream。当预算不足时，你需要丢弃消息。
+请描述一种比“丢弃最早消息”更优的算法，并说明如何在 FRP 中通过数据变换实现它。
+(提示：考虑消息的重要性、成对关系、以及 System Prompt 的保护)。</p>
+<details>
+<summary>点击查看提示与答案</summary>
+<p><strong>答案</strong>：
+<strong>算法逻辑</strong>：</p>
+<ol>
+<li><strong>保护集</strong>：System Prompt 和最后 2 轮对话（保证上下文连贯）永远不删。</li>
+<li><strong>成对删除</strong>：User/Assistant 消息必须成对删除，防止出现孤立的回答。</li>
+<li><strong>重要性权重</strong>：如果消息包含 Tool Call 或 RAG 引用，尽量保留（或将其转换为纯文本摘要）。</li>
+<li><strong>摘要替换</strong>：与其删除，不如将中间 10 轮对话替换为一条 "Summary of conversation from time T1 to T10"。</li>
+</ol>
+<p><strong>FRP 实现</strong>：
+这是一个 <code>HistoryState -&gt; TruncatedHistoryState</code> 的纯函数转换。
+<code>Stream&lt;Message[]&gt;</code> 经过 <code>map</code> 算子：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">new_history</span> <span class="o">=</span> <span class="n">history_stream</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">msgs</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">total_tokens</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="p">[</span><span class="n">sys_prompt</span><span class="p">]</span> <span class="o">+</span> <span class="n">msgs</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span> <span class="c1"># 保护头尾</span>
+        <span class="n">middle</span> <span class="o">=</span> <span class="n">msgs</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="n">summarize_model</span><span class="p">(</span><span class="n">middle</span><span class="p">)</span> <span class="c1"># 可能会产生异步副作用，需注意</span>
+        <span class="k">return</span> <span class="n">keep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">summary</span><span class="p">]</span> <span class="o">+</span> <span class="n">keep</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">msgs</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><em>注意</em>：如果 <code>summarize</code> 是异步 LLM 调，这里需要用 <code>flatMap</code> / <code>switchMap</code> 而不是简单的 <code>map</code>。</p>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="51-just-one-more-token">5.1 "Just One More Token" 错误</h3>
+<p>开发者常设置 <code>max_tokens = context_window - current_prompt_length</code>。
+<strong>错误原因</strong>：忽略了 API 协议本身的开销（JSON 结构、特殊控制符、甚至空格）。
+<strong>后果</strong>：API 报错 <code>context_length_exceeded</code>，哪怕你计算得看似刚好。
+<strong>修复</strong>：永远保留 <strong>Buffer</strong>（例如 50-100 tokens）作为协议开销的安全垫。</p>
+<h3 id="52-tokenizer">5.2 Tokenizer 不一致</h3>
+<p><strong>现象</strong>：前端用 simple-tokenizer (JS) 计算是 1000，后端用 tiktoken (Python) 算是 1200，模型实际扣费是 1250。
+<strong>后果</strong>：预算超支或无谓的截断。
+<strong>修复</strong>：不要过度依赖前端估算。前端只做数量级检查，<strong>以模型返回的 <code>usage</code> 字段为真理</strong>，并在 <code>scan</code> 循环中修正本地的计数器。</p>
+<h3 id="53-the-loop-inflation">5.3 循环膨胀 (The Loop Inflation)</h3>
+<p><strong>现象</strong>：Agent 陷入 <code>Thought -&gt; Action -&gt; Observation</code> 循环。每次 Observation（工具回执）都很长。
+<strong>后果</strong>：Token 消耗呈指数级或快速线性增长，几轮后撑爆窗口。
+<strong>修复</strong>：</p>
+<ol>
+<li><strong>限制回执长度</strong>：对工具输出强行截断（如只取前 1000 字符）。</li>
+<li><strong>遗忘机制</strong>：在 Prompt 中只保留最近 1-2 次工具调用的详细结果，之前的调用只保留“Result: Success”简报。</li>
+</ol>
+<h3 id="54">5.4 忽视流式输出的扣费</h3>
+<p><strong>现象</strong>：用户手动停止了生成（Stop 按钮），但系统直到生成完才扣减预算。
+<strong>后果</strong>：预算显示滞后，用户实际上可能已经把配额用光了，但 UI 还没刷新。
+<strong>修复</strong>：在 FRP 流中，Token 是一个一个蹦出来的。应当监听 <code>TokenStream</code>，每收到一个 chunk，就实时扣减 <code>BudgetSignal</code>。</p>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter11.html" class="nav-link prev">← Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</a><a href="chapter13.html" class="nav-link next">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化 →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

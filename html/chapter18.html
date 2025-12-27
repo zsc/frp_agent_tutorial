@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="appendix-a-frp-the-agent-developers-rosetta-stone">Appendix A｜术语表 &amp; FRP 算子速查 (The Agent Developer's Rosetta Stone)</h1>
+<h2 id="1">1. 开篇段落</h2>
+<p>在构建实时 LLM Agent 时，开发者往往面临“三种语言”的认知摩擦：</p>
+<ol>
+<li><strong>AI 语言</strong>：关注 Prompt、Token、Context Window、RAG、Tool Call。</li>
+<li><strong>分布式系统语言</strong>：关注 Latency、Throughput、Backpressure、Consistency、CAP。</li>
+<li><strong>FRP（函数响应式编程）语言</strong>：关注 Stream、Observable、Subscription、Operator、Marble Diagram。</li>
+</ol>
+<p>本附录是这三种语言的“罗塞塔石碑（Rosetta Stone）”。它不是一本通用的 RxJS/ReactiveX 手册，而是<strong>专门为 Agent 开发者定制的战术手册</strong>。</p>
+<p><strong>本章目标</strong>：</p>
+<ul>
+<li><strong>消除歧义</strong>：明确“流（Stream）”在 Token 生成和事件总线中的不同含义。</li>
+<li><strong>模式匹配</strong>：当你脑海中有一个 Agent 行为（如“说话被打断”、“工具超时重试”）时，能迅速找到对应的 FRP 拓扑结构。</li>
+<li><strong>决策辅助</strong>：提供一张“算子决策树”，帮助你在几十个算子中选出对的那一个。</li>
+</ul>
+<hr />
+<h2 id="a1-the-grand-map">A.1 跨域术语对照表 (The Grand Map)</h2>
+<p>我们将术语分为三个层级：<strong>实体（名词）</strong>、<strong>行为（动词）</strong>、<strong>时空属性（形容词/副词）</strong>。</p>
+<h3 id="a11">A.1.1 实体映射：系统里有什么？</h3>
+<p>| FRP 术语 | 对应 Agent 概念 | 对应系统/后端概念 | 深度解析与直觉模型 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">FRP 术语</th>
+<th style="text-align: left;">对应 Agent 概念</th>
+<th style="text-align: left;">对应系统/后端概念</th>
+<th style="text-align: left;">深度解析与直觉模型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Stream / Observable</strong></td>
+<td style="text-align: left;"><strong>事件流 / Token 流</strong></td>
+<td style="text-align: left;">Channel / Topic / Pipe</td>
+<td style="text-align: left;"><strong>传送带</strong>。无论传送带上是用户的语音帧，还是 LLM 吐出的一个个字，它代表了“未来可能到达的数据”。它是<em>懒惰</em>的，没人看它就不转。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Event / Item</strong></td>
+<td style="text-align: left;"><strong>Token / Action / Signal</strong></td>
+<td style="text-align: left;">Message / Packet</td>
+<td style="text-align: left;"><strong>包裹</strong>。传送带上的货物。可能是 <code>SystemPrompt</code>（大包裹），也可能是 <code>Token "the"</code>（小包裹）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Signal / Behavior</strong></td>
+<td style="text-align: left;"><strong>Memory / Context</strong></td>
+<td style="text-align: left;">State Variable / Cache</td>
+<td style="text-align: left;"><strong>仪表盘读数</strong>。不同于流（发生过的历史），Signal 代表“此时此刻”的值。例如：当前的对话历史列表、当前的 API 余额。Signal = Stream + 初始值。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Subscription</strong></td>
+<td style="text-align: left;"><strong>Agent 启动 / 监听</strong></td>
+<td style="text-align: left;">Consumer / Listener</td>
+<td style="text-align: left;"><strong>插头</strong>。只有插上插头，传送带才通电运行。一个 Stream 可以有多个插头（Multicast）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Subscriber / Observer</strong></td>
+<td style="text-align: left;"><strong>UI / Logger / Speaker</strong></td>
+<td style="text-align: left;">Sink / Handler</td>
+<td style="text-align: left;"><strong>终端处理机</strong>。消费数据的地方。如：TTS 模块消费文本流将其变为声音，DB 模块消费日志流将其落盘。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Teardown / Dispose</strong></td>
+<td style="text-align: left;"><strong>任务取消 / 停止生成</strong></td>
+<td style="text-align: left;">Cleanup / Close FD</td>
+<td style="text-align: left;"><strong>拉闸</strong>。非常重要。用户切走页面时，必须触发 Teardown，不仅停止 UI 渲染，还要沿着链路向上游发送“取消信号”，杀掉后端的 Python 进程。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a12">A.1.2 行为映射：系统在做什么？</h3>
+<p>| FRP 术语 | 对应 Agent 场景 | 核心逻辑 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">FRP 术语</th>
+<th style="text-align: left;">对应 Agent 场景</th>
+<th style="text-align: left;">核心逻辑</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Map / Project</strong></td>
+<td style="text-align: left;"><strong>格式化 / 提取</strong></td>
+<td style="text-align: left;">$f(x)$。一对一变换。如：把 <code>ToolResult</code> JSON 对象转成自然语言字符串。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>FlatMap / MergeMap</strong></td>
+<td style="text-align: left;"><strong>并发执行工具</strong></td>
+<td style="text-align: left;">也是 $f(x)$，但 $x$ 变成了一个新流。如：收到用户指令（事件） -&gt; 触发 Google 搜索（流）。<strong>这是副作用的入口。</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Switch (SwitchLatest)</strong></td>
+<td style="text-align: left;"><strong>打断 / 上下文切换</strong></td>
+<td style="text-align: left;"><strong>喜新厌旧</strong>。一旦新任务来了，旧任务如果还没做完，直接杀掉。这是 Agent 响应性的核心。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Scan / Reduce</strong></td>
+<td style="text-align: left;"><strong>记忆构建</strong></td>
+<td style="text-align: left;"><strong>滚雪球</strong>。把过去所有的对话（Events）累积成一个 List（State）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Filter</strong></td>
+<td style="text-align: left;"><strong>安全护栏 / 路由</strong></td>
+<td style="text-align: left;">卫语句。如：只允许置信度 &gt; 0.9 的 Tool Call 通过；拦截包含敏感词的 Prompt。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Combine / Zip</strong></td>
+<td style="text-align: left;"><strong>多模态融合</strong></td>
+<td style="text-align: left;"><strong>拼装</strong>。等待“图片”和“文本”都到齐了，才打包发给 Vision Model。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a13">A.1.3 时空属性：关于时间与压力</h3>
+<p>| 术语 | 解释 | Agent 场景示例 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">术语</th>
+<th style="text-align: left;">解释</th>
+<th style="text-align: left;">Agent 场景示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Backpressure (背压)</strong></td>
+<td style="text-align: left;">下游处理慢，上游怎么办？</td>
+<td style="text-align: left;">LLM 生成速度（100 token/s）快于 TTS 朗读速度（50 token/s）。需要缓冲（Buffer）或丢弃（Drop）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Debounce (防抖)</strong></td>
+<td style="text-align: left;">等待平静期。</td>
+<td style="text-align: left;">VAD（语音活动检测）。用户闭嘴 500ms 后，才认为这句话说完了，开始发送给模型。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Throttle (节流)</strong></td>
+<td style="text-align: left;">限制最大频率。</td>
+<td style="text-align: left;">UI 渲染 Token。不要每来一个字重绘一次，每 30ms 重绘一次，节省 CPU。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Race (竞态)</strong></td>
+<td style="text-align: left;">谁快用谁。</td>
+<td style="text-align: left;">Speculative Execution（投机执行）。同时跑“快速模型”和“精准模型”，如果快速模型置信度高且先返回，就用它。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Hot vs Cold</strong></td>
+<td style="text-align: left;">直播 vs 录播。</td>
+<td style="text-align: left;">麦克风是 Hot（不听也在录/丢失），API 调用是 Cold（调用了才开始，每次调用都是新的）。</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a2-operator-decision-tree">A.2 算子决策树 (Operator Decision Tree)</h2>
+<p>当你面临一个逻辑问题时，请查阅此表来选择算子。</p>
+<p><strong>Q1: 我要处理的是“数据变形”还是“时间控制”？</strong></p>
+<ul>
+<li><strong>数据变形</strong> -&gt; Q2</li>
+<li><strong>时间/流程控制</strong> -&gt; Q3</li>
+</ul>
+<p><strong>Q2: 变形是一对一，还是一对多（或涉及异步任务）？</strong></p>
+<ul>
+<li><strong>一对一</strong> (e.g., String -&gt; JSON) -&gt; <code>map</code></li>
+<li><strong>涉及异步/副作用</strong> (e.g., Query -&gt; Search -&gt; Result) -&gt; <strong>Q2.1</strong><ul>
+<li><strong>Q2.1: 新任务来了，旧任务怎么办？</strong><ul>
+<li>旧任务必须取消（打断）-&gt; <code>switchMap</code> (最常用)</li>
+<li>旧任务必须做完（排队）-&gt; <code>concatMap</code> (保证顺序)</li>
+<li>旧任务继续做，新任务也做（并发）-&gt; <code>mergeMap</code> (高吞吐)</li>
+<li>旧任务正在做，新任务直接忽略（去重）-&gt; <code>exhaustMap</code> (防手抖点击)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>Q3: 我有多个流，怎么合在一起？</strong></p>
+<ul>
+<li><strong>逻辑“或” (OR)</strong>：任何一个流来数据都行 -&gt; <code>merge</code></li>
+<li><strong>逻辑“与” (AND)</strong>：必须大家都有据 -&gt; <code>combineLatest</code> (取最新) 或 <code>zip</code> (严格配对)</li>
+<li><strong>逻辑“赛跑” (RACE)</strong>：只取最快的那个 -&gt; <code>amb</code> / <code>race</code></li>
+<li><strong>逻辑“主从” (Trigger)</strong>：A 发生时，取 B 的当前值 -&gt; <code>withLatestFrom</code></li>
+</ul>
+<p><strong>Q4: 数据来得太快/太乱怎么办？</strong></p>
+<ul>
+<li><strong>攒一波一起发</strong> -&gt; <code>buffer</code> / <code>window</code> (Dynamic Batching)</li>
+<li><strong>太吵了，等静下来再发</strong> -&gt; <code>debounce</code> (VAD)</li>
+<li><strong>太快了，按固定节奏发</strong> -&gt; <code>throttle</code> (UI Rendering)</li>
+<li><strong>只要第 N 个</strong> -&gt; <code>take</code>, <code>skip</code>, <code>sample</code></li>
+</ul>
+<hr />
+<h2 id="a3-pattern-cheat-sheet">A.3 核心设计模式速查 (Pattern Cheat Sheet)</h2>
+<p>以下是 Agent 开发中最高频出现的 6 种 FRP 模式。</p>
+<h3 id="pattern-1-the-interruptible-thought">Pattern 1: The "Interruptible Thought" (可打断的思考)</h3>
+<p><strong>场景</strong>：用户在 Agent 还在生成长文本时插话，Agent 必须立即停止生成并处理新输入。
+<strong>关键算子</strong>：<code>switchMap</code> (或 <code>switchLatest</code>)</p>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="w"> </span><span class="n">Audio</span><span class="o">:</span><span class="w">    </span><span class="o">---</span><span class="p">[</span><span class="n">Audio</span><span class="w"> </span><span class="n">A</span><span class="p">]</span><span class="o">-----------</span><span class="p">[</span><span class="n">Audio</span><span class="w"> </span><span class="n">B</span><span class="p">]</span><span class="o">----&gt;</span>
+<span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="n">gen</span><span class="w"> </span><span class="n">A</span><span class="p">)</span><span class="w">      </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">ABORT</span><span class="w"> </span><span class="n">gen</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="n">gen</span><span class="w"> </span><span class="n">B</span><span class="p">)</span>
+<span class="w">                  </span><span class="n">v</span><span class="w">                    </span><span class="n">v</span>
+<span class="n">LLM</span><span class="w"> </span><span class="n">Process</span><span class="o">:</span><span class="w">      </span><span class="p">[</span><span class="n">Gen</span><span class="w"> </span><span class="n">A_1</span><span class="p">,</span><span class="w"> </span><span class="n">A_2</span><span class="p">...]</span><span class="w">    </span><span class="p">[</span><span class="n">Gen</span><span class="w"> </span><span class="n">B_1</span><span class="p">,</span><span class="w"> </span><span class="n">B_2</span><span class="p">...]</span>
+<span class="w">                  </span><span class="o">|</span><span class="w">                    </span><span class="o">|</span>
+<span class="n">Output</span><span class="w"> </span><span class="n">Stream</span><span class="o">:</span><span class="w"> </span><span class="o">---</span><span class="p">[</span><span class="n">A_1</span><span class="p">,</span><span class="w"> </span><span class="n">A_2</span><span class="p">]</span><span class="o">-----------</span><span class="p">[</span><span class="n">B_1</span><span class="p">,</span><span class="w"> </span><span class="n">B_2</span><span class="p">...]</span><span class="o">--&gt;</span>
+<span class="w">                  </span><span class="p">(</span><span class="n">A_3</span><span class="p">,</span><span class="w"> </span><span class="n">A_4</span><span class="w"> </span><span class="n">never</span><span class="w"> </span><span class="n">output</span><span class="p">)</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Rule of Thumb</strong>: 将整个“语音转文字 -&gt; LLM 推理 -&gt; TTS”的链条封装在一个 Observable 中，然后用 <code>switchMap</code> 挂载到 User Input 上。</p>
+</blockquote>
+<h3 id="pattern-2-dynamic-batching">Pattern 2: Dynamic Batching (动态批处理)</h3>
+<p><strong>场景</strong>：为了省钱或提高 GPU 利用率，将 50ms 内到达的 Embedding 请求合并发送。
+<strong>关键算子</strong>：<code>bufferTime</code> 或 <code>buffer(debounce)</code></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Requests</span><span class="o">:</span><span class="w">      </span><span class="o">--</span><span class="n">R1</span><span class="o">--</span><span class="n">R2</span><span class="o">----</span><span class="n">R3</span><span class="o">--</span><span class="n">R4</span><span class="o">------</span><span class="n">R5</span><span class="o">----&gt;</span>
+<span class="n">Buffer</span><span class="p">(</span><span class="mi">50</span><span class="n">ms</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="o">------</span><span class="p">[</span><span class="n">R1</span><span class="p">,</span><span class="n">R2</span><span class="p">]</span><span class="o">-----</span><span class="p">[</span><span class="n">R3</span><span class="p">,</span><span class="n">R4</span><span class="p">]</span><span class="o">-----&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">R5</span><span class="w"> </span><span class="n">pending</span><span class="p">)</span>
+<span class="nf">Process</span><span class="o">:</span><span class="w">       </span><span class="o">------</span><span class="n">Batch</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">---</span><span class="n">Batch</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span><span class="o">-&gt;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Rule of Thumb</strong>: 使用 <code>bufferTime(maxAge, maxCount)</code> 双限制，即“要么等 50ms，要么攒够 10 个”，避免流量低时无限等待。</p>
+</blockquote>
+<h3 id="pattern-3-speculative-execution">Pattern 3: Speculative Execution (投机执行/赛马)</h3>
+<p><strong>场景</strong>：同时查询 Cache 和 LLM，或者同时查询 Google 和 Bing。谁先回来用谁。
+<strong>关键算子</strong>：<code>amb</code> (Ambiguous) 或 <code>race</code></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Stream</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="p">(</span><span class="n">Cache</span><span class="p">)</span><span class="err">:</span><span class="w">  </span><span class="o">----------</span><span class="p">(</span><span class="n">Empty</span><span class="o">/</span><span class="n">Slow</span><span class="p">)</span><span class="o">---|</span>
+<span class="n">Stream</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="p">(</span><span class="n">LLM</span><span class="p">)</span><span class="err">:</span><span class="w">    </span><span class="o">----[</span><span class="n">Result</span><span class="o">]-------------|</span>
+<span class="k">Result</span><span class="w"> </span><span class="nl">Stream</span><span class="p">:</span><span class="w">     </span><span class="c1">----[Result]-------------&gt; (A ignored)</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Gotcha</strong>: 即使 A 输了，如果它是 Cold Observable，它的副作用可能仍在后台运行。需要确保输掉的流能响应 Unsubscribe 信号来取消网络请求。</p>
+</blockquote>
+<h3 id="pattern-4-the-stabilizer-vad">Pattern 4: The "Stabilizer" (VAD / 防抖)</h3>
+<p><strong>场景</strong>：用户说话时有停顿。不能把每次停顿都当成结束。
+<strong>关键算子</strong>：<code>debounceTime</code></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Volume</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="kr">Threshold</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="n">Y</span><span class="o">-</span><span class="n">Y</span><span class="o">-</span><span class="n">N</span><span class="o">-</span><span class="n">N</span><span class="o">-</span><span class="n">Y</span><span class="o">-</span><span class="n">N</span><span class="o">-</span><span class="n">N</span><span class="o">-</span><span class="n">N</span><span class="o">-</span><span class="n">N</span><span class="o">-</span><span class="n">N</span><span class="o">-</span><span class="n">N</span><span class="o">---&gt;</span>
+<span class="n">Raw</span><span class="w"> </span><span class="n">Signal</span><span class="o">:</span><span class="w">         </span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">0</span><span class="o">-</span><span class="mi">0</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">0</span><span class="o">-</span><span class="mi">0</span><span class="o">-</span><span class="mi">0</span><span class="o">-</span><span class="mi">0</span><span class="o">-</span><span class="mi">0</span><span class="o">-</span><span class="mi">0</span><span class="o">---&gt;</span>
+<span class="n">Debounce</span><span class="p">(</span><span class="mi">500</span><span class="n">ms</span><span class="p">)</span><span class="o">:</span><span class="w">    </span><span class="o">--------------------</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">--&gt;</span><span class="w"> </span><span class="p">(</span><span class="kr">Only</span><span class="w"> </span><span class="n">fires</span><span class="w"> </span><span class="n">here</span><span class="p">)</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Rule of Thumb</strong>: 真正的 VAD 通常比简单的 <code>debounce</code> 复杂，往往结合 <code>distinctUntilChanged</code>（只有状态从 Talking 变 Silent 才触发）。</p>
+</blockquote>
+<h3 id="pattern-5-memory-accumulation">Pattern 5: Memory Accumulation (状态累积)</h3>
+<p><strong>场景</strong>：维护多轮对话历史。
+<strong>关键算子</strong>：<code>scan</code></p>
+<div class="codehilite"><pre><span></span><code><span class="k">New</span><span class="w"> </span><span class="nl">Msg</span><span class="p">:</span><span class="w">       </span><span class="o">---[</span><span class="n">User:Hi</span><span class="o">]---[</span><span class="n">AI:Hola</span><span class="o">]------&gt;</span>
+<span class="n">Scan</span><span class="w"> </span><span class="p">(</span><span class="n">List</span><span class="p">)</span><span class="err">:</span><span class="w">   </span><span class="o">---[</span><span class="n">List_1</span><span class="o">]----[</span><span class="n">List_2</span><span class="o">]-------&gt;</span>
+<span class="w">                  </span><span class="o">[</span><span class="n">Hi</span><span class="o">]</span><span class="w">        </span><span class="o">[</span><span class="n">Hi, Hola</span><span class="o">]</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Rule of Thumb</strong>: <code>scan</code> 是流式系统的“内存条”。务必配合 <code>shareReplay(1)</code>，否则新加入的 UI 组件（如打开 Debug 面板）会从头开始重放整个历史，导致计算浪费。</p>
+</blockquote>
+<h3 id="pattern-6-robust-retry">Pattern 6: Robust Retry (指数回退重试)</h3>
+<p><strong>场景</strong>：Tool Call 失败（如 429 Too Many Requests），需要重试，但不能立即重试，要越等越久。
+<strong>关键算子</strong>：<code>retryWhen</code> + <code>zip</code> + <code>timer</code></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Attempt</span><span class="w"> </span><span class="mi">1</span><span class="err">:</span><span class="w">     </span><span class="o">--</span><span class="n">X</span><span class="w"> </span><span class="p">(</span><span class="n">Error</span><span class="p">)</span>
+<span class="nl">Wait</span><span class="p">:</span><span class="w">          </span><span class="o">----</span><span class="p">(</span><span class="mi">1</span><span class="n">s</span><span class="p">)</span>
+<span class="n">Attempt</span><span class="w"> </span><span class="mi">2</span><span class="err">:</span><span class="w">             </span><span class="o">--</span><span class="n">X</span><span class="w"> </span><span class="p">(</span><span class="n">Error</span><span class="p">)</span>
+<span class="nl">Wait</span><span class="p">:</span><span class="w">                  </span><span class="o">--------</span><span class="p">(</span><span class="mi">2</span><span class="n">s</span><span class="p">)</span>
+<span class="n">Attempt</span><span class="w"> </span><span class="mi">3</span><span class="err">:</span><span class="w">                     </span><span class="c1">--[Success]--&gt;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Rule of Thumb</strong>: 不要简单的 <code>retry(3)</code>。在 LLM 场景下，拥塞控制至关重要。使用 <code>retryWhen</code> 实现指数回退（Exponential Backoff）。</p>
+</blockquote>
+<hr />
+<h2 id="a4-deep-dive-into-gotchas">A.4 常见陷阱深度剖析 (Deep Dive into Gotchas)</h2>
+<h3 id="a41-the-lazy-stream-trap">A.4.1 The "Lazy Stream" Trap (懒惰执行陷阱)</h3>
+<ul>
+<li><strong>现象</strong>：代码写得很完美，Prompt 拼好了，Log 打印了 "Stream Created"，但是 LLM 就是不发请求，网络面板一片空白。</li>
+<li><strong>原因</strong>：<strong>Observables 是懒惰的 (Lazy)</strong>。如果没有人 <code>subscribe()</code>（或者没有连接到 UI/Audio Output 等最终消费者），中间的逻辑根本不会运行。这与 Promise（一创建就执行）截然不同。</li>
+<li><strong>修复</strong>：确保流的末端有一个 Subscriber，或者使用 <code>publish()</code> + <code>connect()</code> 强制启动（不推荐，容易失控），或者在调试时手动 <code>.subscribe()</code>。</li>
+</ul>
+<h3 id="a42-the-infinite-wait">A.4.2 The "Infinite Wait" (死锁)</h3>
+<ul>
+<li><strong>现象</strong>：使用了 <code>combineLatest</code> 或 <code>zip</code>，但 Agent 卡住了，不输出任何东西。</li>
+<li><strong>原因</strong>：<ol>
+<li><code>combineLatest</code> 需要<strong>所有</strong>输入流都至少产生过<strong>一个</strong>值才会触发第一次输出。如果有一个流（如 <code>UserLocation</code>）迟迟没有初始值，整个流程就会卡死。</li>
+<li><code>zip</code> 需要所有流产生的数据<strong>严格一对一配对</strong>。如果流 A 产生了 3 个事件，流 B 只产生了 2 个，<code>zip</code> 会一直等 B 的第 3 个事件。</li>
+</ol>
+</li>
+<li><strong>修复</strong>：为流添加 <code>startWith(defaultValue)</code> 以确保有初始值。</li>
+</ul>
+<h3 id="a43-the-clock-skew">A.4.3 The "Clock Skew" (时钟偏差)</h3>
+<ul>
+<li><strong>现象</strong>：在回放测试（Replay）中，逻辑完全乱了，或者 <code>bufferTime</code> 切分的数据包大小不一致。</li>
+<li><strong>原因</strong>：FRP 算子默认使用 <code>Scheduler.now()</code>（物理系统时间）。在快速回放日志时，处理 1 小时的日志可能只需要 1 秒物理时间，导致基于时间的算子（debounce, throttle, bufferTime）全部失效。</li>
+<li><strong>修复</strong>：<strong>必须引入 VirtualTimeScheduler</strong>。所有的时序算子都应接受一个可选的 Scheduler 参数。在测试和回放模式下，传入虚拟时钟（详见 Chapter 2 &amp; Chapter 20）。</li>
+</ul>
+<h3 id="a44-cancellation-propagation-failure">A.4.4 Cancellation Propagation Failure (取消失效)</h3>
+<ul>
+<li><strong>现象</strong>：UI 上点击了停止，但后台日志显示 Python Tool 还在跑，甚至跑完后又触发了新的 LLM 生成。</li>
+<li><strong>原因</strong>：<ol>
+<li>使用了 Promise 混用。Promise 一旦创建无法取消（原生），如果 FRP 链条中间断开变成 Promise 再转回来，取消信号会丢失。</li>
+<li>Tool 执行逻辑没有监听 AbortSignal。</li>
+</ol>
+</li>
+<li><strong>修复</strong>：<ol>
+<li>尽量全程使用 Observable。如果必须用 Promise，确保包裹在 <code>from(promise)</code> 中并不是万能的，要看 Promise 内部支持不支持取消。</li>
+<li>编写 Tool/Effect 时，务必接受一个 <code>AbortSignal</code> 或 <code>CancellationToken</code>，并在 Unsubscribe 逻辑中触发它。</li>
+</ol>
+</li>
+</ul>
+<hr />
+<h2 id="_1">本章小结</h2>
+<ul>
+<li>FRP 将 Agent 开发从“回调地狱”和“状态同步噩梦”中解救出来，将其转化为“管道连接”问题。</li>
+<li>掌握 <code>switchMap</code> 也就掌握了 Agent 的“注意力管理”。</li>
+<li>理解 <code>Hot</code> vs <code>Cold</code> 以及 <code>Lazy</code> 特性，是避免诡异 Bug 的基础。</li>
+<li>本附录中的“算子决策树”和“设计模式”应作为开发时的案头参考。</li>
+</ul>
+<hr />
+<h2 id="_2">练习题</h2>
+<h3 id="_3">基础题</h3>
+<ol>
+<li>
+<p><strong>翻译题</strong>：将以下自然语言需求翻译成算子组合。</p>
+<ul>
+<li>“当用户停止输入超过 1 秒后，发送请求，但如果用户又输入了，就取消上一次请求。”</li>
+<li>“把 LLM 返回的 Markdown 文本流，每 50ms 渲染一次到屏幕上。”</li>
+<li>“同时监听键盘输入和麦克风输入，无论谁有动静，都作为‘用户活动’事件。”</li>
+</ul>
+</li>
+<li>
+<p><strong>纠错题</strong>：以下代码有什么问题？</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="c1">// 目标：每秒打印一次 &quot;Heartbeat&quot;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">timer$</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">interval</span><span class="p">(</span><span class="mf">1000</span><span class="p">);</span>
+<span class="c1">// 没有 subscribe</span>
+</code></pre></div>
+
+<h3 id="_4">挑战题</h3>
+<ol start="3">
+<li>
+<p><strong>模式设计：RAG 的“混合去重”</strong>
+    你需要实现一个检索流：</p>
+<ul>
+<li>来源 A：本地向量数据库（快，50ms）</li>
+<li>来源 B：网络搜索（慢，2s）</li>
+<li>要求：<ol>
+<li>必须等待 A 返回。</li>
+<li>如果 A 的置信度 &gt; 0.9，直接使用 A，取消 B（节省成本）。</li>
+<li>如果 A 的置信度 &lt; 0.9，等待 B 回，然后合并 A 和 B 的结果。</li>
+<li>如果 B 超时（3s），仅使用 A 的结果（如果 A 存在）。</li>
+</ol>
+</li>
+<li><em>提示：这需要组合 <code>filter</code>, <code>takeUntil</code> 或条件分支逻辑。试着画出流的拓扑图。</em></li>
+</ul>
+</li>
+<li>
+<p><strong>架构思考：全局暂停</strong>
+    系统有一个全局的 <code>isPaused$</code> 信号（由 UI 暂停按钮控制）。当 <code>isPaused$</code> 为 <code>true</code> 时，所有的 Tool Call 和 LLM 生成都应该被挂起（不仅仅是丢弃结果，而是真正的暂停进度，如果可能的话），或者至少不再触发新的步骤。在 FRP 中如何优雅地将这个信号“广播”给系统中成百上千个细碎的流？</p>
+<ul>
+<li><em>提示：考察 <code>windowToggle</code> 或自定义的 <code>pausable</code> 高阶算子。</em></li>
+</ul>
+</li>
+</ol>
+<h3 id="_5">练习题参考答案</h3>
+<details>
+<summary>点击展开答案</summary>
+<ol>
+<li>
+<p><strong>翻译题</strong>
+*   <code>userInput$.pipe(debounceTime(1000), switchMap(req =&gt; apiCall(req)))</code>
+*   <code>markdownStream$.pipe(throttleTime(50))</code> (注意 throttle 和 debounce 的区别，这里要持续渲染)
+*   <code>merge(keyboard$, microphone$)</code></p>
+</li>
+<li>
+<p><strong>纠错题</strong>
+*   Observables 是 Lazy 的。没有 <code>.subscribe()</code>，<code>interval</code> 永远不会启动，定时器不会运行，什么都不会发生。</p>
+</li>
+<li>
+<p><strong>模式设计：RAG 混合去重</strong>
+*   思路：这不是简单的 <code>race</code>，而是有条件依赖。
+*   伪代码逻辑：</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">sourceA$</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">localDb</span><span class="p">.</span><span class="nx">query</span><span class="p">().</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">share</span><span class="p">());</span><span class="w"> </span><span class="c1">// 必须 share，因为要被用多次</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">sourceB$</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">webSearch</span><span class="p">.</span><span class="nx">query</span><span class="p">();</span>
+
+<span class="k">return</span><span class="w"> </span><span class="nx">sourceA$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+<span class="w">    </span><span class="nx">mergeMap</span><span class="p">(</span><span class="nx">resultA</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">resultA</span><span class="p">.</span><span class="nx">score</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.9</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">of</span><span class="p">(</span><span class="nx">resultA</span><span class="p">);</span><span class="w"> </span><span class="c1">// 满足条件，直接返回，忽略 B</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// 不满足，启动 B，并与 A 合并</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">sourceB$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+<span class="w">                </span><span class="nx">timeout</span><span class="p">(</span><span class="mf">3000</span><span class="p">),</span><span class="w"> </span><span class="c1">// B 超时控制</span>
+<span class="w">                </span><span class="nx">catchError</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">of</span><span class="p">(</span><span class="nx">emptyResult</span><span class="p">)),</span><span class="w"> </span><span class="c1">// 超时后 B 视为空</span>
+<span class="w">                </span><span class="nx">map</span><span class="p">(</span><span class="nx">resultB</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">mergeResults</span><span class="p">(</span><span class="nx">resultA</span><span class="p">,</span><span class="w"> </span><span class="nx">resultB</span><span class="p">))</span>
+<span class="w">            </span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">})</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="o">*</span><span class="n">注：这里利用了</span><span class="w"> </span><span class="n">FRP</span><span class="w"> </span><span class="n">的懒惰性。只有进入</span><span class="w"> </span><span class="n n-Quoted">`else`</span><span class="w"> </span><span class="n">分支订阅</span><span class="w"> </span><span class="n n-Quoted">`sourceB$`</span><span class="w"> </span><span class="n">时，网络搜索才会真正发出。</span><span class="o">*</span>
+</code></pre></div>
+
+<ol start="4">
+<li><strong>架构思考：全局暂停</strong>
+*   这在 FRP 中是一个高级话题。
+*   <strong>方案一（拦截器）</strong>：在所有 Effect 的入口处 <code>pipe(skipUntil(isPaused$.pipe(filter(v =&gt; !v))))</code> —— 这很难维护。
+*   <strong>方案二（switchMap 切换）</strong>：
+    <code>isPaused$.pipe(switchMap(paused =&gt; paused ? NEVER : rootTaskStream))</code>。
+    但这会完全重置流，而不是“挂起”。</li>
+</ol>
+<ul>
+<li><strong>方案三（自定义 pausable 算子）</strong>：
+    需要实现一个带缓冲的算子。当 paused 时，将上游事件存入 buffer；当 unpaused 时，释放 buffer。
+    对于“正在运行的副作用”（如 API Call），通常无法“暂停”，只能选择“取消”或“继续执行但暂时不处理回调”。在 Agent 语境下，“暂停”通常意味着“停止调度新的 Step”，这可以通过控制 Scheduler 或主 Loop 的 Trigger 来实现。</li>
+</ul>
+</details>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter17.html" class="nav-link prev">← Chapter 17｜参考实现：一个端到端的 FRP Agent</a><a href="chapter19.html" class="nav-link next">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

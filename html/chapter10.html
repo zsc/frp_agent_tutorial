@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-10-vad-agent-trigger-system"><a href="chapter10.html">Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System</a></h1>
+<h2 id="1">1. 开篇</h2>
+<p>在传统的 Request-Response（请求-响应）模型中，LLM 是被动的：它静静地等待用户按下“发送”键。但在<strong>实时（Real-time）Agent</strong> 的世界里，Agent 必须是一个<strong>主动的观察者</strong>。它需要像生物一样，从连续不断的、充满噪声的环境信号中，敏锐地捕捉到“变化的瞬间”。</p>
+<p>在语音交互中，<strong>VAD (Voice Activity Detection)</strong> 负责判断“什么时候有人在说话”。如果 VAD 做得不好，Agent 要么会像个聋子（漏听），要么会像个神经质（把风声当人声）。</p>
+<p>我们将这一概念化为 <strong>Semantic VAD（语义/意图活动检测）</strong>。本章将教你如何使用 FRP 的“流”和“算子”，构建一个通用的触发器系统。这个系统不仅能检测声音，还能检测<strong>沉默、打断、股价波动、数据库变更</strong>，甚至是<strong>用户的犹豫</strong>。</p>
+<p><strong>本章目标</strong>：</p>
+<ol>
+<li><strong>泛化 VAD 哲学</strong>：理解 Attack（起势）、Sustain（保持）、Release（释放）在非语音场景的应用。</li>
+<li><strong>信号处理工程</strong>：掌握 Debounce（去抖）、Throttle（节流）、Hysteresis（迟滞/施密特触发器）等核心稳定性算法。</li>
+<li><strong>DSL 设计</strong>：构建一套声明式的 <code>when(...).for(...).then(...)</code> 语法来描述触发逻辑。</li>
+<li><strong>联动与抑制</strong>：解决触发器之间的冲突（Race），以及如何将触发事件转化为 Prompt 上下文。</li>
+</ol>
+<hr />
+<h2 id="2">2. 文字论述</h2>
+<h3 id="21">2.1 触发器的分类学：从离散到连续</h3>
+<p>在 FRP 视角下，触发器是将<strong>连续变化的信号（Signal）</strong> 坍缩为 <strong>离散的事件（Event）</strong> 过程。我们可以将触发器分为四类：</p>
+<ol>
+<li><strong>阈值触发 (Threshold Trigger)</strong>：最类似 VAD。<ul>
+<li><em>例</em>：麦克风音量 &gt; -20dB；用户愤怒指数 &gt; 0.8；股票跌幅 &gt; 5%。</li>
+</ul>
+</li>
+<li><strong>模式触发 (Pattern Trigger)</strong>：基于时间序列的特征。<ul>
+<li><em>例</em>：连续 3 次工具调用失败；用户输入了 "Hello" 紧接着又撤回了。</li>
+</ul>
+</li>
+<li><strong>状态触发 (State Trigger)</strong>：基于“没有事情发生”或“特定状态持续”。<ul>
+<li><em>例</em>：<strong>尴尬的沉默</strong>（双方都不说话超过 5 秒）；任务执行卡死（Loading 状态超过 30 秒）。</li>
+</ul>
+</li>
+<li><strong>外部事件 (External Trigger)</strong>：系统信号。<ul>
+<li><em>例</em>：定时器 Tick；API Webhook 回调；用户点击 UI 按钮。</li>
+</ul>
+</li>
+</ol>
+<h3 id="22">2.2 核心算法：让触发器“抗噪”</h3>
+<p>真实世界的信号是脏的。光线会闪烁，麦克风有底噪，情感模型的输出会跳变。直接 <code>if (value &gt; threshold) trigger()</code> 是新手的典型错误，会导致 Agent 疯狂抽搐。</p>
+<h4 id="a-hysteresis-schmitt-trigger">A. 迟滞比较器 (Hysteresis / Schmitt Trigger)</h4>
+<p>这是 VAD 稳定的基石。我们需要<strong>两个阈值</strong>，构建一个“死区（Dead Zone）”。</p>
+<ul>
+<li><strong>High Threshold (开启阈值)</strong>：必须超过这个值，状态才变为 ON。</li>
+<li><strong>Low Threshold (关闭阈值)</strong>：必须低于这个值，状态才变为 OFF。</li>
+</ul>
+<p><strong>ASCII 图解：迟滞效应</strong></p>
+<div class="codehilite"><pre><span></span><code>Input Value (Signal)
+   ^
+   |        /^\       (Noise spike)
+ T_High |--/---\-----/--\---------- (Trigger ON)
+   |      /     \   /    \      /--\
+ T_Low |--/------\-/------\----/----\---- (Trigger OFF)
+   |     /        V        \  /      \
+   |----/-------------------\/--------\--&gt; Time
+
+Output State (Clean Event Stream)
+   ^
+ ON|       _______           __________
+   |______|       |_________|          |__
+</code></pre></div>
+
+<p><em>注：如果没有 T_Low，中间那个小波谷（V 处）就会导致一次错误的“关闭-再开启”，造成 Agent 语无伦次。</em></p>
+<h4 id="b-debounce-vs-throttle-vs-window">B. 时间滤波：Debounce vs. Throttle vs. Window</h4>
+<p>FRP 提供了时间维度的滤波器，这是防止“帕森式”触发的关键。</p>
+<p>| 算子 | 行为描述 | 适用场景 |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">算子</th>
+<th style="text-align: left;">行为描述</th>
+<th style="text-align: left;">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Debounce</strong> (防抖)</td>
+<td style="text-align: left;">“等它停稳了再说”。只有当信号停止变化 T 秒后，才发射最新值。</td>
+<td style="text-align: left;">用户停止输入检测；搜索框自动补全。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Throttle</strong> (节流)</td>
+<td style="text-align: left;">“每 T 秒最多处理一次”。无论输入多快，按固定节奏采样。</td>
+<td style="text-align: left;">进度条更新；高频传感器数据的日志记录。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Audit/Sample</strong></td>
+<td style="text-align: left;">“当另一个流触发时，采样当前流的值”。</td>
+<td style="text-align: left;">当用户点击“发送”时，采样当前的地理位置。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Window/Buffer</strong></td>
+<td style="text-align: left;">“收集过去 T 秒内的所有事件”。</td>
+<td style="text-align: left;">检测“短时间内的高频错误”（如 10s 内 5 次 API 失败）。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-vad-asr">2.3 泛化 VAD 模型：ASR 包络</h3>
+<p>音频处理中的 <strong>ADSR (Attack, Decay, Sustain, Release)</strong> 包络模型可以完美映射到 Agent 的触发逻辑中。</p>
+<ol>
+<li><strong>Attack (起势)</strong>：信号超过阈值需要持续多久才算触发？<ul>
+<li><em>防误触</em>：门关的声音很大但只有 200ms，不应触发“用户说话”。</li>
+<li><em>FRP 实现</em>：<code>signal.filter(&gt; thresh).window(time).filter(all_true)</code></li>
+</ul>
+</li>
+<li><strong>Sustain (保持)</strong>：触发后，即使信号短暂跌落，状态依然保持。<ul>
+<li><em>防断音</em>：用户说话中间的停顿（Hysteresis 解决一部分，Sustain 解决更长的停顿）。</li>
+</ul>
+</li>
+<li><strong>Release (释放)</strong>：信号消失多久后，才判定事件结束？<ul>
+<li><em>确定终点</em>：决定何时调用 LLM 进行回复。</li>
+</ul>
+</li>
+</ol>
+<h3 id="24-trigger-dsl">2.4 Trigger DSL：声明式定义</h3>
+<p>为了管理复杂的触发逻辑，我们不应该写死代码，而应定义 DSL。</p>
+<p><strong>Rule-of-Thumb</strong>：DSL 应该读起来像英语句子。</p>
+<div class="codehilite"><pre><span></span><code>// 场景：检测“用户困惑”
+Trigger(&quot;UserConfused&quot;)
+  .fromSource(UserFaceExpressionStream)  // 数据源：面部表情
+  .map(data =&gt; data.confusionScore)      // 提取特征
+  .filter(score =&gt; score &gt; 0.8)          // 阈值判定
+  .sustain(3.seconds)                    // 必须持续困惑3秒（防止眨眼误判）
+  .cooldown(30.seconds)                  // 触发一次后，30秒内不再触发（防止骚扰）
+  .suppressIf(AgentIsSpeaking)           // 抑制条件：如果 Agent 正在解释，别打断
+  .emitEvent({ type: &quot;help_needed&quot; })    // 产生事件
+</code></pre></div>
+
+<h3 id="25-prompt">2.5 触发器与 Prompt 的联动</h3>
+<p>触发器不是终点，而是 Prompt 工程的起点。触发事件必须携带<strong>上下文快照</strong>。</p>
+<p>当 <code>Trigger</code> 激活时，它应该生成一个结构化的 <strong>Observation</strong>，注入到 LLM 的上下文中：</p>
+<ul>
+<li><strong>Bad</strong>: <code>[System]: User is confused.</code> (LLM 不知道为什么)</li>
+<li><strong>Good</strong>: <code>[System Event]: Trigger 'UserConfused' fired. Reason: Facial confusion score 0.85 for 3s. Current Topic: 'Quantum Physics'. Suggestion: Offer simplified explanation.</code></li>
+</ul>
+<h3 id="26-suppression">2.6 抑制（Suppression）与优先级</h3>
+<p>在多触发器系统中，<strong>冲突</strong>是必然的。</p>
+<ul>
+<li><strong>场景</strong>：VAD 检测到用户说话（想打断），但同时“低电量报警”触发了。</li>
+<li><strong>优先级仲裁</strong>：<ul>
+<li><code>Safety &gt; UserInterrupt &gt; SystemCorrection &gt; IdleChat</code></li>
+</ul>
+</li>
+<li><strong>FRP 实现</strong>：<ul>
+<li>使用 <code>combineLatest</code> 合并所有触发流。</li>
+<li>通过 <code>Gate</code> 或 <code>Filter</code> 算子，当高优先级流为 Active 时，阻断低优先级流。</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>万物皆 VAD</strong>：任何从连续数据中提取离散意图的过程，都应遵循 Attack-Sustain-Release 的包络模型。</li>
+<li><strong>稳定性是生命线</strong>：没有迟滞（Hysteresis）和去抖（Debounce）的触发器是不可用的。务必处理好信号边缘的抖动。</li>
+<li><strong>上下文感知</strong>：触发器不仅是开关，它是信息的载体。触发时必须捕获当时的“案发现场”（Snapshot）给 LLM。</li>
+<li><strong>声明式优于命令式</strong>：使用 DSL 组合算子，而不是编写嵌套的 <code>if-else</code> 和 <code>setTimeout</code>。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题（熟悉概念与算子）</h3>
+<p><strong>Q1: 解释为什么在检测“用户停止输入”时，<code>Debounce</code> 是比 <code>Throttle</code> 更正确的选择？</strong></p>
+<details>
+<summary>点击查看答案</summary>
+<ul>
+<li><strong>提示</strong>想象用户在连续打字。</li>
+<li><strong>答案</strong>：<ul>
+<li><strong>Throttle</strong> 会按照固定的时间间隔（例如每 500ms）触发一次。如果用户连续打字 10 秒，Throttle 会触发 20 次中间状态，这会导致 Agent 在用户还没写完句子时就抢答。</li>
+<li><strong>Debounce</strong> 的逻辑是“只有当信号流<strong>静止</strong>了 T 时间后，才发射最后一个值”。这完美符合“用户打完字并停顿思考”的语义，保证 Agent 拿到的是完整的句子。</li>
+</ul>
+</li>
+</ul>
+</details>
+<p><strong>Q2: 假设你有一个 <code>MicVolume</code>（麦克风音量）流（0.0 ~ 1.0）。请用伪代码或文字描述，如何实现一个带有迟滞的 VAD 逻辑：开启阈值 0.6，关闭阈值 0.2，初始状态为 OFF。</strong></p>
+<details>
+<summary>点击查看答案</summary>
+<ul>
+<li><strong>提示</strong>：使用 <code>scan</code> 或状态机变量。</li>
+<li><strong>答案</strong>：<ul>
+<li><strong>核心逻辑</strong>：</li>
+</ul>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="nx">Stream</span><span class="p">(</span><span class="nx">MicVolume</span><span class="p">).</span><span class="nx">scan</span><span class="p">((</span><span class="nx">isTalking</span><span class="p">,</span><span class="w"> </span><span class="nx">volume</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">isTalking</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">volume</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.6</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span><span class="w">  </span><span class="c1">// 超过高阈值 -&gt; 开启</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">isTalking</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">volume</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.2</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"> </span><span class="c1">// 低于低阈值 -&gt; 关闭</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">isTalking</span><span class="p">;</span><span class="w">                            </span><span class="c1">// 否则保持死区内的状态</span>
+<span class="p">},</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span><span class="w"> </span><span class="c1">// 初始值为 false</span>
+<span class="p">.</span><span class="nx">distinctUntilChanged</span><span class="p">();</span><span class="w"> </span><span class="c1">// 只在状态真正改变时发射事件</span>
+</code></pre></div>
+
+</details>
+<p><strong>Q3: 什么是“幽灵触发（Ghost Trigger）”？在多模态场景下（语音+视觉），如何利用多模态融合来减少幽灵触发？</strong></p>
+<details>
+<summary>点击查看答案</summary>
+<ul>
+<li><strong>提示</strong>：VAD 听到电视声音；视觉看到照片。</li>
+<li><strong>答案</strong>：<ul>
+<li><strong>幽灵触发</strong>：指非目标事件（如噪音、背景人声、误触）导致触发器错误激活。</li>
+<li><strong>多模态融合解法</strong>：使用 <code>AND</code> 逻辑（在 FRP 中通常是 <code>combineLatest</code> + <code>map</code>）。</li>
+<li><strong>逻辑</strong>：<code>Trigger = VAD_Active AND Face_Detected</code>。</li>
+<li>只有当麦克风有声音，<strong>且</strong>摄像头里检测到有人脸（甚至口型在动）时，才触发 Agent。这能有效过滤掉电视背景声或只有画面没有声音的场景。</li>
+</ul>
+</li>
+</ul>
+</details>
+<h3 id="_2">挑战题（深入思考与架构设计）</h3>
+<p><strong>Q4: “尴尬的沉默”触发器设计。</strong>
+<strong>需求：当 LLM 回复结束后，如果 8 秒内既没有用户语音，也没有用户打字，也没有系统正在运行的工具任务，Agent 应主动发起话题。但在 8 秒倒计时期间，任何用户活动都应立即重置该计时器。</strong></p>
+<details>
+<summary>点击查看答案</summary>
+<ul>
+<li><strong>提示</strong>：<code>switchMap</code> 是处理“取消/重置”的神器。</li>
+<li><strong>答案</strong>：<ul>
+<li><strong>流定义</strong>：<ol>
+<li><code>LLM_Done_Stream</code>: LLM 完成回复的瞬间发射。</li>
+<li><code>Activity_Stream</code>: <code>Merge(UserVoice, UserTyping, ToolRunning)</code>。任何活动都发射数据。</li>
+</ol>
+</li>
+<li><strong>FRP 拓扑</strong>：</li>
+</ul>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>SilenceTrigger = LLM_Done_Stream
+    .switchMap(() =&gt; {
+        // LLM 完成后，开启一个 8秒 的计时器
+        return Timer(8000).takeUntil(Activity_Stream)
+    })
+    // 如果 Activity_Stream 在 8秒内发射了数据，takeUntil 会终止 Timer，
+    // switchMap 会因新的 LLM_Done 而切换（如果有多轮）。
+    // 只有当 Timer 完整走完 8秒 没被打断，这里才会发射值。
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="o">*</span><span class="w">   </span><span class="o">**</span><span class="n">关键点</span><span class="o">**</span><span class="n">：</span><span class="n n-Quoted">`switchMap`</span><span class="w"> </span><span class="n">保证了新的回合开始会覆盖旧的计时；</span><span class="n n-Quoted">`takeUntil`</span><span class="w"> </span><span class="n">保证了用户打断会立即杀死计时器。</span>
+</code></pre></div>
+
+</details>
+<p><strong>Q5: 设计一个“智能打断（Smart Interrupt）”系统。</strong>
+<strong>需求：用户在 Agent 说话时说话（Barge-in）。但是，如果用户只是说 "嗯"、"对"、"啊"（Backchannel/对答词），Agent 不应停止；只有当用户说出实质性内容或语速急促时才打断。</strong></p>
+<details>
+<summary>点击查看答案</summary>
+<ul>
+<li><strong>提示</strong>：这需要两级 VAD。一级检测声音，二级检测语义。Speculative Execution (投机执行) 也可以用在这里。</li>
+<li><strong>答案</strong>：<ul>
+<li><strong>架构分层</strong>：<ol>
+<li><strong>Level 1 (Energy VAD)</strong>: 检测到声音，立刻将 Agent 音量 <strong>Duck</strong>（压低音量，而非完全停止），进入“监听态”。</li>
+<li><strong>Level 2 (ASR Stream)</strong>: 实时转录用户的开头几个字。</li>
+<li><strong>Level 3 (Semantic Filter)</strong>:<ul>
+<li>定义“非打断词表”：["嗯", "是的", "继续", "OK"]。</li>
+<li>如果是词表内的词 -&gt; 恢复 Agent 音量，忽略输入。</li>
+<li>如果是其他词 -&gt; 发送 <code>Interrupt_Event</code>，完全停止 Agent，并处理用户新指令。</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><strong>FRP 实现</strong>：这是一个 <code>Conditional Stream</code>。ASR 结果流经 Filter，只有通过 Filter 的事件才会触发 Cancellation Token。</li>
+</ul>
+</li>
+</ul>
+</details>
+<p><strong>Q6: 调试与回放。你构建的触发器系统在上线后，用户反馈“经常莫名其妙地自动说话”。你无法复现。请设计一个基于 Log 的“时间旅行调试器”所需的数据结构。</strong></p>
+<details>
+<summary>点击查看答案</summary>
+<ul>
+<li><strong>提示</strong>：仅仅记录“触发了”是不够的，需要知道“为什么触发”以及“当时所有传感器的状态”。</li>
+<li><strong>答案</strong>：<ul>
+<li><strong>核心思想</strong>：记录所有 <strong>Input Streams</strong> 的原始事件（带时间戳），而不是记录中间状态。</li>
+<li><strong>Schema 设计</strong>：</li>
+</ul>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timeline&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;t&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;stream&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MicVolume&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;t&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1050</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;stream&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MicVolume&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.8</span><span class="p">},</span><span class="w"> </span><span class="c1">// 疑似噪音</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;t&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1100</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;stream&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FaceDetect&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;t&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;stream&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TriggerFired&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VAD&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;decision_snapshot&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;vol&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.8</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;thresh&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.6</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="k">*</span>   **调试方法**：编写一个 Test Runner，加载这段 JSON，使用虚拟时钟（Virtual Clock）按时间戳将事件注入到你的 FRP 逻辑中。你就可以在本地 100% 复现当时的逻辑判断过程，观察是哪个阈值设置得不对。
+</code></pre></div>
+
+</details>
+<p><strong>Q7: (新增) 资源预算与频率限制。如果你的 Trigger 是基于“股票价格变化”触发 RAG 搜索，当市场剧烈波动时，每秒触发 10 次会导致 Token 耗尽和 API 封禁。请设计一个流控策略。</strong></p>
+<details>
+<summary>点击查看答案</summary>
+<ul>
+<li><strong>提示</strong>：结合 <code>Throttle</code> 和 <code>Window</code>，以及“变化幅度”检查。</li>
+<li><strong>答案</strong>：<ul>
+<li><strong>策略 1: 变化幅度门控 (Significant Change Gate)</strong><ul>
+<li><code>filter(current =&gt; abs(current - last_triggered_price) &gt; 2%)</code></li>
+<li>只有价格变化超过 2% 才允许通过。</li>
+</ul>
+</li>
+<li><strong>策略 2: 自适应节流 (Adaptive Throttle)</strong><ul>
+<li>使用 <code>throttle(time)</code>。如果 budget 充足，time = 1min；如果 budget 紧张，time = 10min。</li>
+</ul>
+</li>
+<li><strong>策略 3: 批量聚合 (Batching)</strong><ul>
+<li>使用 <code>bufferTime(1 minute)</code>。</li>
+<li>将 1 分钟内的所有变动打包成一条消息：“过去 1 分钟，AAPL 变动了 5 次，当前价格 X，最低 Y，最高 Z”。</li>
+<li>这既节省了 Token，又给了 LLM 更宏观的市场趋势息。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="1-self-excitation-echo-loop">1. 自身回环 (Self-Excitation / Echo Loop)</h3>
+<ul>
+<li><strong>现象</strong>：Agent 说话的声音被自己的麦克风收录，触发 VAD，Agent 以为用户打断，于是停下来听，结果听到的是自己的回声/尾音。Agent 再次试图解释，进入死循环。</li>
+<li><strong>Gotcha</strong>：不要指望软件 AEC (回声消除) 完美。</li>
+<li><strong>Fix</strong>：<ul>
+<li><strong>逻辑互锁 (Logical Interlock)</strong>：在 FRP 中，<code>AgentSpeaking</code> 信号必须作为 VAD 触发器的<strong>硬抑制源</strong>（Suppressor）。</li>
+<li><code>VAD_Stream = Raw_Audio_Activity.filter(() =&gt; !Agent.isSpeaking)</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="2-state-desync-race-condition">2. 状态不同步导致的竞态 (State Desync Race Condition)</h3>
+<ul>
+<li><strong>现象</strong>：触发逻辑依赖 <code>AgentState</code> 变量。当事件 A 发生时，代码去读取 <code>AgentState</code>，但此时状态更新的事件还在队列里排队，导致读取了旧状态。</li>
+<li><strong>Gotcha</strong>：在反应式系统中混用“推（Push）”和“拉（Pull）”模式。</li>
+<li><strong>Fix</strong>：<strong>永远不要读变量，只通过 <code>withLatestFrom</code> 算子组合流</strong>。这能保证在该时刻，你拿到的一定是逻辑时钟对齐的最新状态。</li>
+</ul>
+<h3 id="3-context-pollution">3. 上下文窗口污染 (Context Pollution)</h3>
+<ul>
+<li><strong>现象</strong>：设置了过于灵敏的触发器（如“每分钟报时”或“每一笔小额交易通知”）。几小时后，Prompt 上下文被数千条无用的 <code>[System Event]</code> 填满，挤掉了真正重要的对话记忆，且导致推理成本爆炸。</li>
+<li><strong>Fix</strong>：<ul>
+<li><strong>短期记忆 vs 长期记忆</strong>：高频触发器只能进入“短期流动槽（Scratchpad）”，只有关键事件才写入对话历史。</li>
+<li><strong>自动摘要</strong>：FRP 管道中增加一个 <code>Summarize</code> 节点，每累积 10 条低级事件，合成一条高级摘要。</li>
+</ul>
+</li>
+</ul>
+<h3 id="4-thundering-herd">4. 惊群效应 (Thundering Herd)</h3>
+<ul>
+<li><strong>现象</strong>：一个系统事件（如“网络恢复”）同时满足了 10 个 Agent/任务的触发条件。导致瞬间并发 10 个 LLM 请求，打爆限流。</li>
+<li><strong>Fix</strong>：在触发器的输出端增加 <strong>Jitter (随机抖动)</strong>。</li>
+<li><code>TriggerStream.delay(() =&gt; Math.random() * 2000)</code>。让大家错峰触发。</li>
+</ul>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter9.html" class="nav-link prev">← Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</a><a href="chapter11.html" class="nav-link next">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护” →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

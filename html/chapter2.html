@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 2｜FRP 基础：用事件流描述 Agent</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-2frp-agent">Chapter 2｜FRP 基础：用事件流描述 Agent</h1>
+<h2 id="21-">2.1 开篇：从“请求-响应”到“持续流”</h2>
+<p>在传统的 Web 开发或简单的 Chatbot Demo 中，我们习惯于<strong>“回合制”</strong>逻辑：用户发话 -&gt; 系统等待 -&gt; LLM 思考 -&gt; 返回结果。这种线性的 <code>await request()</code> 模型在构建复杂的<strong>实时（Real-time）Agent</strong> 时会迅速失效。</p>
+<p><strong>为什么？请看真实的 Agent 场景：</strong></p>
+<blockquote>
+<p>用户正在说话（音频流 continuous inflow），LLM 正在输出上一句话的后半段（Token 流 continuous outflow）。此时，VAD（语音活动检测）突然判定用户语气激动（打断事件 interrupt event），系统需要立即停止 LLM 生成，清空播放缓冲区，同时记录日志，并开始处理新的语音输入。</p>
+</blockquote>
+<p>这里没有单一的入口和出口，只有错综复杂的、并发的<strong>事件流</strong>。</p>
+<p>FRP（Functional Reactive Programming）提供了一种数学上严谨的方式来驯服这种复杂性。它的核心心法是：<strong>把时间作为第一公民，把一切变化抽象为流。</strong> Agent 不再是一个按顺序执行指令的“过程”，而是一个<strong>数据管道网络</strong>。</p>
+<p><strong>本章学习目标</strong>：</p>
+<ol>
+<li><strong>思维重塑</strong>：从“控制流（Control Flow）”转向“数据流（Data Flow）”。</li>
+<li><strong>核心词汇</strong>：掌握 Stream、Signal、Effect、Backpressure 等 FRP 术语在 Agent 中的映射。</li>
+<li><strong>算子武器库</strong>：熟练运用 <code>switchLatest</code>（打断）、<code>scan</code>（记忆）、<code>withLatestFrom</code>（上下文注入）等关键算子。</li>
+<li><strong>架构雏形</strong>：学会如何构建“纯逻辑”与“副作用”分离的管道。</li>
+</ol>
+<hr />
+<h2 id="22">2.2 核心概念论述</h2>
+<h3 id="221-stream-vs-signal">2.2.1 Stream vs Signal：世界的两种形态</h3>
+<p>在构建 Agent 时，区分“间发生的”和“持续存在的”至关重要。</p>
+<h4 id="1-stream-observable-sequence">1. Stream (事件流 / Observable Sequence)</h4>
+<ul>
+<li><strong>定义</strong>：一系列离散的事件，<strong>只在特定的时间点发生</strong>。流是可以结束（Completed）或出错（Error）的。</li>
+<li><strong>Agent 映射</strong>：<ul>
+<li>用户的键盘敲击 (<code>KeyPressStream</code>)</li>
+<li>LLM 吐出的一个 Token (<code>TokenStream</code>)</li>
+<li>工具返回的一个报错 (<code>ErrorStream</code>)</li>
+<li>VAD 检测到的“说话开始”信号 (<code>SpeechStartStream</code>)</li>
+</ul>
+</li>
+<li><strong>直观理解</strong>：像雨点落下，或者传送带上的包裹。你不能问“现在的雨点是什么”，你只能接住掉下来的那一个。</li>
+</ul>
+<h4 id="2-signal-behavior-property">2. Signal (信号 / Behavior / Property)</h4>
+<ul>
+<li><strong>定义</strong>：一个<strong>随时间连续变化的值</strong>。它在任何时刻都有且仅有一个当前值（Current Value）。</li>
+<li><strong>Agent 映射</strong>：<ul>
+<li>当前的对话历史 (<code>ContextSignal</code>)</li>
+<li>当前的 Token 预算余额 (<code>BudgetSignal</code>)</li>
+<li>用户的在线状态 (<code>ConnectivitySignal</code>)</li>
+<li>Prompt 的前模板 (<code>PromptTemplateSignal</code>)</li>
+</ul>
+</li>
+<li><strong>直观理解</strong>：像水位线、温度计、或者银行账户余额。你可以随时问“现在是多少”。</li>
+</ul>
+<p><strong>ASCII 图解：</strong></p>
+<div class="codehilite"><pre><span></span><code>Stream (用户点击发送):
+-------o-----------o-------o----&gt; 时间
+       ^           ^       ^
+     Send        Send    Send
+
+Signal (当前输入框内的文本):
+       &quot;H&quot;         &quot;Hel&quot;   &quot;Hello&quot;
+-------+-----------+-------+----&gt; 时间
+Value: &quot;Hello&quot; ------------------ (任意时刻去取，都能取到当前值)
+</code></pre></div>
+
+<blockquote>
+<p><strong>Rule of Thumb</strong>:</p>
+<ul>
+<li>如果你关心“<strong>发生</strong>的一瞬间”（触发动作），用 <strong>Stream</strong>。</li>
+<li>如果你关心“<strong>现在</strong>的状态是什么”（作为数据源或条件），用 <strong>Signal</strong>。</li>
+<li>Signal 通常由 Stream 通过 <code>scan</code> 算子生成；Stream 可以由 Signal 的变化采样（sample）而来。</li>
+</ul>
+</blockquote>
+<h3 id="222-hot-vs-cold-observables">2.2.2 扩展概念：Hot vs Cold Observables</h3>
+<p>在 LLM Agent 中，理解 Hot/Cold 极其重要，否则会造成<strong>重复计费</strong>或<strong>状态不同步</strong>。</p>
+<ul>
+<li><strong>Cold Observable (冷流)</strong>：只有被订阅（Subscribe）时才开始执行逻辑。<strong>每个订阅者拥有独立的执行流</strong>。<ul>
+<li><em>例子</em>：一个封装了 LLM API 请求的流。如果你订阅它两次，它会<strong>发送两次 HTTP 请求</strong>，消耗双倍 Token。</li>
+</ul>
+</li>
+<li><strong>Hot Observable (热流)</strong>：无论有无订阅者，事件都在发生。所有订阅者<strong>共享</strong>同一个数据源。<ul>
+<li><em>例子</em>：用户的麦克风输入流。无论你是否在处理，用户的话都已经说出去了。</li>
+<li><em>转换</em>：使用 <code>share()</code> 或 <code>multicast()</code> 算子可以将 Cold 转为 Hot。</li>
+</ul>
+</li>
+</ul>
+<h3 id="223">2.2.3 时间语义：逻辑、物理与虚拟时间</h3>
+<p>FRP 赋予了我们操纵时间的能力，这对 Agent 的测试和稳定性至关重要。</p>
+<ol>
+<li><strong>物理时间 (Wall-clock Time)</strong>：真实世界的秒数。<ul>
+<li><em>用途</em>：设置 API 超时（Timeout）、防抖（Debounce）、API 限流（Rate Limit）。</li>
+</ul>
+</li>
+<li><strong>逻辑时间 (Ordering)</strong>：关注事件的因果序（Happens-Before），不关注具体过几毫秒。<ul>
+<li><em>用途</em>：确保“用户先问，Agent 后答”，确保“Prompt 必须在 Tool 结果返回后更新”。</li>
+</ul>
+</li>
+<li><strong>虚拟时间 (Virtual Time)</strong>：<strong>测试神器</strong>。<ul>
+<li><em>概念</em>：Agent 内部的时间由一个 <code>Scheduler</code> 控制。在单元测试中，我们可以用 <code>TestScheduler</code>。</li>
+<li><em>场景</em>：测试“如果用户 30 秒不说话，Agent 主动打招呼”。</li>
+<li><em>威力</em>：在虚拟时间下，这 30 秒可以在 1 毫秒内模拟完成。测试既快又确定（Deterministic）。</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="23-the-agents-toolkit">2.3 常用算子映射 (The Agent's Toolkit)</h2>
+<p>Agent 的智能不全在 LLM，很大一部分在<strong>算子组合</strong>。以下是构建 Agent 的“原子动作”。</p>
+<h3 id="231-transforming-filtering">2.3.1 变换与过滤 (Transforming &amp; Filtering)</h3>
+<ul>
+<li><strong><code>map</code></strong>: $A \to B$<ul>
+<li><em>用例</em>：把 <code>AudioChunk</code> 转为 <code>Spectrogram</code>；把 <code>LLMResponse</code> 提取为 <code>ContentString</code>。</li>
+</ul>
+</li>
+<li><strong><code>filter</code></strong>: $A \to A | \emptyset$<ul>
+<li><em>用例</em>：过滤掉置信度 &lt; 0.8 的语音识别结果；过滤掉 <code>&lt;|padding|&gt;</code> Token。</li>
+</ul>
+</li>
+<li><strong><code>scan</code> (累积)</strong>: $(State, Event) \to State$<ul>
+<li><em>地位</em>：<strong>状态机的灵魂</strong>。</li>
+<li><em>用例</em>：将离散的 Token 流累积成完整的句子；将多轮对话累积成 <code>MessageHistory</code>。</li>
+</ul>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>Events:  &quot;Hi&quot;      &quot;Bot&quot;       &quot;Reply&quot;
+           |         |           |
+[scan] -&gt; (s+&quot;Hi&quot;) -&gt; (s+&quot;Bot&quot;) -&gt; (s+&quot;Reply&quot;)
+           |         |           |
+State:   [&quot;Hi&quot;]    [&quot;Hi&quot;,&quot;Bot&quot;] [&quot;Hi&quot;,&quot;Bot&quot;,&quot;Reply&quot;]
+</code></pre></div>
+
+<h3 id="232-combining-context">2.3.2 组合与上下文 (Combining &amp; Context)</h3>
+<ul>
+<li><strong><code>merge</code></strong>: $StreamA, StreamB \to Stream(A|B)$<ul>
+<li><em>用例</em>：<strong>多模态输入</strong>。用户既可以打字，也可以说话。<code>merge(textInput, speechToText)</code> 让下游逻辑统一处理。</li>
+</ul>
+</li>
+<li><strong><code>withLatestFrom</code></strong>: $StreamA, SignalB \to Stream(A, B_{current})$<ul>
+<li><em>地位</em>：<strong>RAG 与 Context 注入的关键</strong>。</li>
+<li><em>语义</em>：当事件 A 发生时，顺便带上 B 当前的值。</li>
+<li><em>用例</em>：用户发出提问 (Stream) 时，抓取当前的文档数据库索引 (Signal) 或当前的系统时间 (Signal)，组合成一个 <code>(Query, Context)</code> 对，送给 LLM。</li>
+</ul>
+</li>
+<li><strong><code>combineLatest</code></strong>: $SignalA, SignalB \to Signal(A, B)$<ul>
+<li><em>用例</em>：UI 状态同步。当 <code>IsLoading</code> 信号或 <code>HasError</code> 信号任意一个变化时，更新 UI 的状态。</li>
+</ul>
+</li>
+</ul>
+<h3 id="233-timing-flow-control">2.3.3 时序控制 (Timing &amp; Flow Control)</h3>
+<ul>
+<li><strong><code>debounce</code> (防抖)</strong>:<ul>
+<li><em>用例</em>：用户打字搜索 RAG。不希望每敲一个键就 Embed 一次。等用户停顿 500ms 后再触发。</li>
+</ul>
+</li>
+<li><strong><code>throttle</code> (节流)</strong>:<ul>
+<li><em>用例</em>：UI 刷新率控制。LLM 生成 Token 速度可能极快（如 100 token/s），但 UI 没必要每毫秒重绘。<code>throttle(30ms)</code> 限制刷新频率。</li>
+</ul>
+</li>
+<li><strong><code>window</code> / <code>buffer</code> (分窗/缓冲)</strong>:<ul>
+<li><em>用例</em>：<strong>动态批处理 (Dynamic Batching)</strong>。不要来一个 Embedding 请求发一个。收集 100ms 内的所有请求，打包成一个 Batch 发送给 GPU。</li>
+</ul>
+</li>
+</ul>
+<h3 id="234-higher-order-agent">2.3.4 高阶算子 (Higher-Order) —— Agent 的核心逻辑</h3>
+<p>这是最难理解但也最强大的部分<strong>流的流 (Stream of Streams)</strong>。</p>
+<ul>
+<li>
+<p><strong><code>switchLatest</code> (切换最新)</strong>:</p>
+<ul>
+<li><em>语义</em>：当新的<strong>任务流</strong>到来时，<strong>取消</strong>旧的任务流。</li>
+<li><em>场景</em>：<strong>打断与改口</strong>。<ol>
+<li>用户问 "A" -&gt; 触发 LLM 流 A (正在生成...)</li>
+<li>用户突然改口问 "B" -&gt; 触发 LLM 流 B</li>
+<li><code>switchLatest</code> 自动 unsubscribe 流 A (导致停止生成、关闭连接)，只保留流 B 的输出。</li>
+<li>结果：UI 永远不会出现“前一个问题的幽灵回答”。</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>
+<p><strong><code>exhaustMap</code> (耗尽/忽略)</strong>:</p>
+<ul>
+<li><em>语义</em>：当前任务未完成前，<strong>忽略</strong>新的任务。</li>
+<li><em>场景</em>：<strong>提交按钮防误触</strong>。在“提交订单”工具执行完成前，忽略用户的重复点击。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>concatMap</code> (排队)</strong>:</p>
+<ul>
+<li><em>语义</em>：当前任务完成后，再执行下一个。</li>
+<li><em>场景</em>：<strong>TTS 播放队列</strong>。LLM 生成了三句话。第一句没播完，第二句必须排队，不能混音播放。</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="24-effect">2.4 Effect 模型：副用隔离</h2>
+<p>FRP 提倡“纯逻辑”，但 Agent 必须“脏手”去干活（调 API、写 DB）。我们通过 <strong>Managed Effects</strong> 模式来解决。</p>
+<p><strong>架构模式：Sandwich（三明治）</strong></p>
+<ol>
+<li><strong>Input Streams</strong>: 用户的麦克风、键盘、系统时间。</li>
+<li><strong>Pure Logic (FRP Graph)</strong>: 这一层<strong>不执行</strong>任何 API 调用。<ul>
+<li>它接收输入，经过 <code>map/filter/scan</code> 等变换。</li>
+<li>它的输出不是“结果”，而是<strong>意图 (Intent)</strong> 或 <strong>动作描述 (Action Description)</strong>。</li>
+<li>例如：输出一个对象 <code>{ type: 'CALL_LLM', prompt: '...', temperautre: 0.7 }</code>。</li>
+</ul>
+</li>
+<li><strong>Effect Runners (Impure)</strong>: 这一层监听上述意图流。<ul>
+<li>它拿到 <code>CALL_LLM</code> 对象，发起真正的 HTTP 请求。</li>
+<li>请求成功或失败后，它产生一个新的 <strong>Result Event</strong>。</li>
+</ul>
+</li>
+<li><strong>Feedback Loop</strong>: Result Event 也就是一个新的 Stream，流回 <strong>Pure Logic</strong> 层，触发下一步（如更新 UI 或进行下一轮推理）。</li>
+</ol>
+<p><strong>循环图解</strong>：</p>
+<div class="codehilite"><pre><span></span><code>       (Input Stream)
+            |
+            v
+    +----------------+
+    | Pure Agent Core| &lt;---- 这是一个纯函数式的管道网络
+    | (State Machine)|
+    +----------------+
+            | 输出 (Intent Stream: &quot;请帮我查天气&quot;)
+            v
+    +----------------+
+    | Effect Runner  | &lt;---- 这里执行 HTTP / DB / Python
+    | (Side Effects) |
+    +----------------+
+            | 反馈 (Result Stream: &quot;天气是晴天&quot;)
+            v
+     (Loop back to Core)
+</code></pre></div>
+
+<hr />
+<h2 id="25-error-backpressure">2.5 错误通道与背压 (Error &amp; Backpressure)</h2>
+<h3 id="251-error-channel">2.5.1 错误通道 (Error Channel)</h3>
+<p>在 FRP 中，标准的 Stream 一旦发生 Error 就会<strong>终止 (Terminate)</strong>。这对于 7x24 小时运行的 Agent 是不可接受的。</p>
+<ul>
+<li><strong>策略 1：<code>catchError</code> &amp; <code>retry</code></strong><ul>
+<li>在 Effect Runner 层面捕获网络错误，进行指数退避重试。</li>
+</ul>
+</li>
+<li><strong>策略 2：错误物化 (Materialize)</strong><ul>
+<li>不要让流发出 Error 事件，而是让流发出一个“包装了错误的正常事件”。</li>
+<li><code>Stream&lt;T&gt;</code> 变成 <code>Stream&lt;Result&lt;T&gt;&gt;</code>。</li>
+<li><code>Result</code> 可能是 <code>{ status: 'success', data: ... }</code> 或 <code>{ status: 'error', error: ... }</code>。</li>
+<li>这样，核心逻辑流永远不会断开，可以根据 status 分支处理。</li>
+</ul>
+</li>
+</ul>
+<h3 id="252-backpressure">2.5.2 背压 (Backpressure)</h3>
+<p><strong>问题</strong>：LLM 生成 token 的速度（比如 Groq 达到 500 token/s）远快于 TTS 朗读的速度（3 token/s）。如果不处理，内存会爆，或者 TTS 播放延迟巨大。</p>
+<ul>
+<li><strong>策略 1：缓冲 (Buffer)</strong><ul>
+<li>TTS 播放器维护一个队列。</li>
+</ul>
+</li>
+<li><strong>策略 2：丢弃 (Drop/Throttle)</strong><ul>
+<li>对于 UI 渲染（如字幕滚动），如果来不及画，直接丢弃中间帧，只画最新的。</li>
+</ul>
+</li>
+<li><strong>策略 3：控制源头 (Pausing - 较难实现)</strong><ul>
+<li>大部分 LLM API 不支持 TCP 级别的背压暂停。通常我们在客户端使用 Buffer 策略。</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="26">2.6 最小可运行示例 (概念管道)</h2>
+<p>我们来搭建一个最简单的 <strong>语音对话 Agent</strong> 的管道结构。</p>
+<div class="codehilite"><pre><span></span><code>Input: MicStream (AudioFrame)
+
+1. VAD (Voice Activity Detection):
+   SpeakingStream = MicStream -&gt; map(detectVoice) -&gt; distinctUntilChanged()
+   // 输出: True, True, False, False...
+
+2. UserIntent (Silence Detection):
+   // 用户停止说话 1.5s 后视为一句话结束
+   CommitStream = SpeakingStream 
+     -&gt; filter(isFalse) 
+     -&gt; debounce(1.5s)
+
+3. STT (Speech to Text):
+   // 只处理最后确认的那段音频
+   TextStream = CommitStream 
+     -&gt; withLatestFrom(AudioBuffer) 
+     -&gt; map(callSTT_API) 
+     -&gt; switchLatest() // 如果识别还没回来用户又说话了，取消前一次识别
+
+4. Prompt Assembly:
+   // 将当前文本与历史记录组合
+   ContextStream = TextStream 
+     -&gt; withLatestFrom(ConversationHistorySignal) 
+     -&gt; map(makePrompt)
+
+5. LLM Response:
+   TokenStream = ContextStream 
+     -&gt; map(callLLM_Stream_API) 
+     -&gt; switchLatest() // 用户打断时取消生成
+
+6. TTS &amp; UI:
+   AudioOutput = TokenStream -&gt; buffer(sentence) -&gt; concatMap(callTTS)
+   DisplayOutput = TokenStream -&gt; scan(accumulateText)
+</code></pre></div>
+
+<hr />
+<h2 id="27">2.7 本章小结</h2>
+<ol>
+<li><strong>一切皆流</strong>：输入是流，输出是流，连“状态”也是由流累积而成的信号。</li>
+<li><strong>算子即逻辑</strong>：业务逻辑（如打断、防抖、批处理）不应该写在回调函数里，而应该表现为算子的组合。</li>
+<li><strong>副作用外置</strong>：保持核心逻辑纯净，通过“意图对象”驱动副作用执行器。</li>
+<li><strong>时间可控</strong>：利用虚拟时间进行单元测试，是保证复杂 Agent 逻辑健壮性的唯一途径。</li>
+</ol>
+<hr />
+<h2 id="28">2.8 练习题</h2>
+<h3 id="50">基础题 (50%)</h3>
+<p><strong>Q1. 数据清洗 (Map/Filter)</strong>
+LLM 的流式输出不仅包含文本，还偶尔夹杂思考过程标签（如 <code>&lt;think&gt;...&lt;/think&gt;</code>）。我们需要实时显示文本给用户，但必须隐藏思考过程。
+输入流：<code>"Hel"</code>, <code>"lo"</code>, <code>"&lt;"</code>, <code>"thi"</code>, <code>"nk&gt;"</code>, <code>"hmm"</code>, <code>"&lt;!--"</code>, <code>"think--&gt;"</code>, <code>" world"</code>
+<strong>要求</strong>：设计一个算子组合，去除标签内的内容。
+<em>(提示：这需要一个简单的状态机)</em></p>
+<details>
+<summary>点击查看参考答案</summary>
+<p>这单用 <code>filter</code> 很难，通常结合 <code>scan</code> 维护一个 <code>inTag</code> 状态。
+State: <code>{ buffer: "", inTag: boolean, outputToUser: "" }</code>
+Input: Token string.
+Logic inside scan:</p>
+<ul>
+<li>如果遇到 <code>&lt;</code>，设置 <code>inTag=true</code>。</li>
+<li>如果遇到 <code>&gt;</code>，设置 <code>inTag=false</code>。</li>
+<li>如果 <code>inTag</code> 为 true，将 token 存入 buffer（以防不是标签需要回吐，或者直接丢弃）。</li>
+<li>如果 <code>inTag</code> 为 false，将 token 输出。
+最终由 <code>scan</code> 输出的状态中提取 <code>outputToUser</code> 字段。</li>
+</ul>
+</details>
+<p><strong>Q2. 状态累积 (Scan)</strong>
+设计一个 <strong>Token 计费器</strong>。输入是 LLM 的 Response 事件流，每个事件包含 <code>{ usage: { prompt: 10, completion: 5 } }</code>。输出是一个 Signal，显示当前 Session 累计消耗。</p>
+<details>
+<summary>点击查看参考答案</summary>
+<p>算子：<code>scan</code>
+初始值：<code>0</code>
+Accumulator 函数：<code>(acc, event) =&gt; acc + event.usage.prompt + event.usage.completion</code>
+使用 <code>startWith(0)</code> 确保一开始就有值。</p>
+</details>
+<p><strong>Q3. 避免抖动 (Debounce)</strong>
+用户正在拖动 Slider 调整 LLM 的 <code>Temperature</code> 参数（0.0 - 1.0）。Slider 会产生密集的高频事件。我们希望在用户停止拖动 300ms 后，才向后台发送配置更新请求。</p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><code>inputStream.debounceTime(300ms)</code>
+这会丢弃中间所有的快速变化，只发射停止变化后的最后一个值。</p>
+</details>
+<p><strong>Q4. 多源合并 (Merge)</strong>
+UI 上有一个“重新生成”按钮 (<code>BtnStream</code>) 和一个快捷键 Ctrl+R (<code>KeyStream</code>)。
+如何得到一个统一的 <code>RegenerateIntent</code> 流？</p>
+<details>
+<summary>点击查看参考答案</summary>
+<p><code>merge(BtnStream, KeyStream)</code>
+得到一个新的流，下游不区分来源，只知道要执行重新生成。</p>
+</details>
+<hr />
+<h3 id="50_1">挑战题 (50%)</h3>
+<p><strong>Q5. 竞态处理与打断 (SwitchLatest) - 核心考点</strong>
+场景：</p>
+<ol>
+<li>用户说 "查询天气" (T=0s)。</li>
+<li>Agent 开始调用天气 Tool (耗时 3s)。</li>
+<li>在 T=1s 时，用户觉得慢，说 "算了，讲个笑话"。</li>
+<li>Agent 必须<strong>立即</strong>取消天气查（如果可能），或者至少<strong>丢弃</strong>天气查询的结果，转而开始调用笑话 Tool。
+请用伪代码描述这个 Stream 结构。</li>
+</ol>
+<details>
+<summary>点击查看参考答案</summary>
+<div class="codehilite"><pre><span></span><code><span class="nx">UserInputStream</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">input</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">     </span><span class="c1">// 这一步把输入映射为一个 Observable (Tool Execution)</span>
+<span class="w">     </span><span class="c1">// 注意：这里返回的是流，而不是结果</span>
+<span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="nx">performToolExecution</span><span class="p">(</span><span class="nx">input</span><span class="p">);</span><span class="w"> </span>
+<span class="w">  </span><span class="p">})</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">switchLatest</span><span class="p">()</span><span class="w"> </span><span class="c1">// 魔法在这里</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span><span class="nx">result</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">showResult</span><span class="p">(</span><span class="nx">result</span><span class="p">));</span>
+</code></pre></div>
+
+<p>当 T=1s 新的 Input 到来，<code>map</code> 产生了一个新的 Tool Execution Observable。<code>switchLatest</code> 看到新的 Observable 来了，会自动 unsubscribe 旧的（天气）Observable。这通常会触发 API Client 的 AbortController，真正取消网络请求。</p>
+</details>
+<p><strong>Q6. 上下文注入 (WithLatestFrom)</strong>
+RAG 场景。用户触发 "Ask" 事件 (Stream)。此时我们需要去取 UI 上选中的 "Knowledge Base ID" (Signal)，以及当前的 "User Subscription Level" (Signal) 来决定是否有限。
+如何把这三者组合成一个 Request 对象？</p>
+<details>
+<summary>点击查看参考答案</summary>
+<div class="codehilite"><pre><span></span><code><span class="nx">AskStream</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+<span class="w">  </span><span class="nx">withLatestFrom</span><span class="p">(</span><span class="nx">KbIdSignal</span><span class="p">,</span><span class="w"> </span><span class="nx">SubLevelSignal</span><span class="p">),</span>
+<span class="w">  </span><span class="nx">map</span><span class="p">(([</span><span class="nx">question</span><span class="p">,</span><span class="w"> </span><span class="nx">kbId</span><span class="p">,</span><span class="w"> </span><span class="nx">level</span><span class="p">])</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="kt">question</span><span class="p">,</span><span class="w"> </span><span class="nx">kb</span><span class="o">:</span><span class="w"> </span><span class="kt">kbId</span><span class="p">,</span><span class="w"> </span><span class="nx">userLevel</span><span class="o">:</span><span class="w"> </span><span class="kt">level</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>注意：这里用 <code>withLatestFrom</code> 而不是 <code>combineLatest</code>。因为我们只想在用户“提问”的那一瞬间去读状态。如果用户没提问，仅仅切换了 KB ID，不应该触发查询。</p>
+</details>
+<p><strong>Q7. 智能重试 (RetryWhen + Zip)</strong>
+LLM API 经常报 503 Overloaded。请设计一个流逻辑：
+遇到错误时，重试 3 次。
+第 1 次等待 1s，第 2 次等待 2s，第 3 次等待 4s (指数退避)。
+如果 3 次后还挂，抛出错误。</p>
+<details>
+<summary>点击查看参考答案</summary>
+<div class="codehilite"><pre><span></span><code><span class="nx">ApiStream</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+<span class="w">  </span><span class="nx">retryWhen</span><span class="p">(</span><span class="nx">errors</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="nx">errors</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+<span class="w">      </span><span class="c1">// 产生索引 0, 1, 2</span>
+<span class="w">      </span><span class="nx">zip</span><span class="p">(</span><span class="nx">range</span><span class="p">(</span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="mf">3</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">i</span><span class="p">),</span><span class="w"> </span>
+<span class="w">      </span><span class="c1">// 计算延迟</span>
+<span class="w">      </span><span class="nx">flatMap</span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">timer</span><span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">pow</span><span class="p">(</span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">1000</span><span class="p">))</span><span class="w"> </span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>注意：如果 retryWhen 返回的流完成了，原始流也会完成；如果返回的流报错了，原始流才会抛出错误。</p>
+</details>
+<p><strong>Q8. 动态批处理 (Buffer/Window)</strong>
+Embedding 接口很贵，而且支持 Batch 输入。
+系统中有多个组件在并发请求 Embedding。
+要求：</p>
+<ol>
+<li>如果积攒了 10 个请求，立即发车。</li>
+<li>如果不足 10 个，但距离第一个请求已经过了 50ms，也必须发车（低延迟要求）。</li>
+</ol>
+<details>
+<summary>点击查看参考答案</summary>
+<p>这是 <code>buffer</code> 算子的经典场景，通常需要自定义 buffer 逻辑或使用特定库的扩展算子（如 RxJS 的 <code>bufferTime</code> 或 <code>bufferCount</code> 的变体）。
+一种简单实现：
+<code>requestStream.bufferTime(50, null, 10)</code>
+(意思是：每 50ms 切分一次，或者虽然没到 50ms 但数量达到 10 个了也切分)。
+拿到的是一个 <code>Array&lt;Request&gt;</code>，然后传给 Batch API。</p>
+</details>
+<hr />
+<h2 id="29-gotchas">2.9 常见陷阱与错误 (Gotchas)</h2>
+<ol>
+<li>
+<p><strong>Subscription 泄漏 (Memory Leak)</strong></p>
+<ul>
+<li><em>现象</em>：Agent 运行一小时后越来越慢，或者同一句话被重复回复多次。</li>
+<li><em>原因</em>：在组件销毁或用户登出时，没有 <code>unsubscribe</code> 那些长连接的流。</li>
+<li><em>解法</em>：使用 <code>takeUntil(destroySignal)</code> 模式，或使用框架提供的自动管理（如 Angular 的 AsyncPipe，React 的 useEffect cleanup）。</li>
+</ul>
+</li>
+<li>
+<p><strong>Promise 与 Observable 混用的地狱</strong></p>
+<ul>
+<li><em>现象</em>：流逻辑中突然出现 <code>async/await</code>，导致流变成了 <code>Observable&lt;Promise&lt;T&gt;&gt;</code>，下游无法处理。</li>
+<li><em>原因</em>：在 <code>map</code> 里直接调用了异步函数。</li>
+<li><em>解法</em>：凡是涉及异步操作，必须用 <code>flatMap</code> (mergeMap), <code>switchMap</code>, 或 <code>concatMap</code>，决不能用 <code>map</code>。</li>
+</ul>
+</li>
+<li>
+<p><strong>Hot vs Cold 的误解</strong></p>
+<ul>
+<li><em>现象</em>：HTTP 请求被发送了多次。</li>
+<li><em>原因</em>：定义了一个 Cold Observable（如 API 请求），然后在代码里 subscribe 了它两次（一次用于打印日志，一次用于显示 UI）。</li>
+<li><em>解法</em>：对于副作用操作，使用 <code>share()</code> 或 <code>shareReplay(1)</code> 将其转为 Hot 流，确保副作用只执行一次。</li>
+</ul>
+</li>
+<li>
+<p><strong>Signal 初始值缺失</strong></p>
+<ul>
+<li><em>现象</em>：UI 启动时一片空白，直到用户第一次交互才显示。</li>
+<li><em>原因</em>：<code>combineLatest</code> 等待所有源流至少发射一次数据才会执行。如果某个 Signal 没有初始值（Initial Value），整个逻辑就会卡住（Hang）。</li>
+<li><em>解法</em>：对所有 Signal 类型的流使用 <code>startWith(defaultValue)</code>。</li>
+</ul>
+</li>
+</ol>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter1.html" class="nav-link prev">← Chapter 1｜问题空间与总体架构：为什么用 FRP</a><a href="chapter3.html" class="nav-link next">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统” →</a></nav>
+        </main>
+    </div>
+</body>
+</html>

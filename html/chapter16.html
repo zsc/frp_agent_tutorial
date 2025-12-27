@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Chapter 16｜评测与持续迭代：从“能用”到“好用”</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="chapter-16">Chapter 16｜评测与持续迭代：从“能用”到“好用”</h1>
+<h2 id="1">1. 开篇</h2>
+<p>在构建实时 Agent 的过程中，开发者往往容易陷入“Demo 陷阱”：在开发环境里，对着几个精心挑选的 Prompt 和测试用例，系统表现完美。然而上线后，面对真实用户的网络抖动、模糊指令、以及长尾的竞态条件，系统体验可能迅速崩塌。</p>
+<p>传统的 LLM 评测（如 MMLU 分数）只关注“文本生成的质量”，而忽略了实时 Agent 的核心挑战<strong>时序正确性、交互流畅度与系统稳定性</strong>。</p>
+<p>本章的目标是建立一套<strong>全维度的质量保障体系</strong>。我们将学习如何利用 FRP 的“时间旅行”能力（Replay）来构建确定性的测试集，如何量化“好用”（不仅仅是“正确”），以及如何通过闭环数据驱动系统的持续迭代。</p>
+<hr />
+<h2 id="2">2. 核心论述</h2>
+<h3 id="21">2.1 评测的四个维度</h3>
+<p>对于一个实时 Agent，评测不能只看“回答对了没有”。我们需要关注以下四个维度：</p>
+<ol>
+<li>
+<p><strong>正确性 (Correctness)</strong>：</p>
+<ul>
+<li><em>语义正确</em>：RAG 检索是否准确？幻觉程度如何？</li>
+<li><em>工具使用正确</em>：参数是否符合 Schema？调用逻辑是否闭环？</li>
+<li><em>状态一致性</em>：Prompt 中的状态（如时间、位置）是否与真实环境同步？</li>
+</ul>
+</li>
+<li>
+<p><strong>时延与流畅度 (Latency &amp; Fluidity)</strong>：</p>
+<ul>
+<li><em>TTFT (Time To First Token)</em>：用户说完到第一个字蹦出来的耗时。</li>
+<li><em>E2E Latency</em>：完成整个任务（如查询数据库并回答）的总耗时。</li>
+<li><em>Interruption Handling</em>：打断后，旧的输出多久能停止？新的输出多久能跟上？</li>
+<li><em>Jitter (抖动)</em>：Token 输出是否匀速？UI 是否频繁闪烁？</li>
+</ul>
+</li>
+<li>
+<p><strong>稳定性 (Stability)</strong>：</p>
+<ul>
+<li><em>Crash Rate</em>：系统崩溃或死锁的频率。</li>
+<li><em>Fallback Rate</em>：工具失效导致降级服务的比例。</li>
+<li><em>Race Condition Defects</em>：因并发导致的状态错乱（如回答了上一轮的问题）。</li>
+</ul>
+</li>
+<li>
+<p><strong>成本 (Cost Efficiency)</strong>：</p>
+<ul>
+<li><em>Token Usage</em>：完成任务消耗的 Token 总量。</li>
+<li><em>Waste Rate</em>：被丢弃的计算（如 Speculative Execution 失败、打断后废弃的生成）占比。</li>
+</ul>
+</li>
+</ol>
+<h3 id="22-frp">2.2 利用 FRP 事件流进行“确定性回放评测”</h3>
+<p>在传统架构中，复现一个“偶发 Bug”极其困难（比如：用户在工具返回前 100ms 说话，导致 UI 卡死）。但在 FRP 架构中，一切皆是<strong>事件流</strong>。</p>
+<p>如果我们记录了 Session 的所有输入事件（Input Event Stream）和时间戳，理论上我们可以将这些事件<strong>注入</strong>到一个纯净的 Runtime 实例中，从而<strong>100% 复现</strong>当时的状态演变。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[真实用户会话]</span>
+<span class="na">User Input</span><span class="o">:</span><span class="w">  </span><span class="s">A---B-------C--&gt; (A: &quot;Hello&quot;, B: &quot;Check weather&quot;, C: &quot;Stop&quot;)</span>
+<span class="na">Network</span><span class="o">:</span><span class="w">     </span><span class="s">----|delay|----&gt; (模拟真实网络延迟)</span>
+<span class="w">                 </span><span class="na">V</span>
+<span class="na">[FRP Recorder] -&gt; 保存为 .jsonl (Event Log)</span>
+
+<span class="na">---------------------------------------------------</span>
+
+<span class="k">[自动化评测管线 (CI/CD)]</span>
+
+<span class="na">1. 加载 Event Log</span>
+<span class="na">2. 启动 &quot;Virtual Clock Scheduler&quot; (虚拟时钟调度器)</span>
+<span class="na">3. 注入事件 A (t</span><span class="o">=</span><span class="s">0), B (t=2s), C (t=5s)</span>
+<span class="na">4. 捕获 Agent Output Stream</span>
+<span class="w">      </span><span class="na">|</span>
+<span class="w">      </span><span class="na">V</span>
+<span class="k">[Assertion / Comparison]</span>
+
+<span class="na">- 检查 t</span><span class="o">=</span><span class="s">5.1s 时是否立即触发了 Cancellation</span>
+<span class="na">- 检查最终输出是否匹配 &quot;Golden Record&quot;</span>
+</code></pre></div>
+
+<p><strong>Rule of Thumb</strong>：如果你的 Agent 逻辑是纯函数式的（依赖 State 和 Event），那么“录制 + 回放”就是最高效的回归测试手段。</p>
+<h3 id="23">2.3 任务基准与“混沌注入”</h3>
+<p>除了回放真实数据，我们还需要构造合成数据来测试边界情况，这被称为“混沌注入（Chaos Injection）”。</p>
+<ul>
+<li><strong>延迟注入</strong>：强制 RAG 检索耗时增加 5s，测试 Agent 是否会发出“正在查询中...”的安抚语（Filler words）。</li>
+<li><strong>噪声注入</strong>：在用户语音流中插入无意义的噪音事件，测试 VAD 和 Intent Filter 的鲁棒性。</li>
+<li><strong>乱序注入</strong>：强制让 Tool B 的结果比 Tool A 先返回，测试 <code>merge</code> 或 <code>switchLatest</code> 逻辑是否正确处理了顺序。</li>
+</ul>
+<h3 id="24-ab">2.4 A/B 测试与灰度发布</h3>
+<p>实时 Agent 的参数调整（如 Speculative Decoding 的阈值、Batching 的窗口大小）往往是权衡（Trade-off）。</p>
+<ul>
+<li><strong>配置即代码</strong>：将所有阈值参数化（Config Object）。</li>
+<li><strong>路由策略</strong>：<ul>
+<li><em>User ID Hash</em>：50% 用户走 V1 策略，50% 走 V2。</li>
+<li><em>Session Type</em>：复杂任务走高配模型，闲聊走低配模型。</li>
+</ul>
+</li>
+<li><strong>观察指标</strong>：在 A/B 测试中，重点关注“负向指标”（如用户打断率、重试率）。如果 V2 版本虽然响应快，但用户频繁打断修正，说明质量下降了。</li>
+</ul>
+<h3 id="25">2.5 质量闭环：从反馈到迭代</h3>
+<p>建立一个自动化的飞轮：</p>
+<ol>
+<li><strong>收集 (Collect)</strong>：用户在 UI 上的点赞/点踩，或者隐式反馈（如用户说“不对，我是说...”）。</li>
+<li><strong>归因 (Attribute)</strong>：利用 Trace ID 定位到是哪个环节出了问题（是听错了？检索错了？还是模型推理错了？）。</li>
+<li><strong>修复 (Fix)</strong>：<ul>
+<li>如果是 Prompt 问题 -&gt; 修改 Prompt 模板 -&gt; 跑回归测试。</li>
+<li>如果是知识缺失 -&gt; 更新 RAG 数据库。</li>
+<li>如果是逻辑 Bug -&gt; 修改 FRP 算子组合。</li>
+</ul>
+</li>
+<li><strong>验证 (Verify)</strong>：在 Golden Dataset 上运行，确保没有 Regression。</li>
+</ol>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>评测不只是打分</strong>：实时 Agent 的评测必须包含时间维度（时延、抖动、竞态）。</li>
+<li><strong>FRP 是测试神器</strong>：利用事件流的不可变性和确定性，可以实现“像素级”的场景回放和调试。</li>
+<li><strong>混沌工程</strong>：主动注入网络延迟和错误，验证系统的弹性（Resilience）。</li>
+<li><strong>成本意识</strong>：高性能往往伴随着高 Token 消耗（如投机执行），需要在评测中监控 ROI（投入产出比）。</li>
+<li><strong>数据闭环</strong>：没有反馈机制的 Agent 是无法进化的，必须打通“用户行为 -&gt; 调试日志 -&gt; 代码/Prompt 修正”的链路。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<ol>
+<li><strong>指标定义辨析</strong>
+在实时语音对话 Agent 中，区分以下指标，并说明哪个对用户体验影响最大：
+A. LLM 生成完整回答的总耗时 (Total Generation Time)
+B. 用户停止说话到听到第一个声音的耗时 (Voice-to-Audio Latency)
+C. 语音转文字的耗时 (ASR Latency)</li>
+</ol>
+<blockquote>
+<p><strong>Hint</strong>：考虑 conversational turn-taking（轮替）的自然度。</p>
+</blockquote>
+<details>
+<summary>参考答案</summary>
+<p><strong>B. Voice-to-Audio Latency</strong> 对用户体验影响最大。</p>
+<ul>
+<li><strong>解析</strong>：这是用户感知到的直接延迟。如果这个时间过长（如超过 500ms），用户会感到对话不自然，甚至以为设备没听见而开始重复说话，导致打断逻辑混乱。</li>
+<li>A 影响的是长内容的等待时间，但在流式播放下，只要开头快，总时长用户容忍度较高。</li>
+<li>C 只是 B 的一部分，是技术指标而非端到端体验指标。</li>
+</ul>
+</details>
+<ol start="2">
+<li><strong>废弃率计算</strong>
+系统开启了 Speculative Execution（投机执行），每当用户输入停顿超过 200ms 就触发一次轻量级意图识别。
+假设：</li>
+</ol>
+<ul>
+<li>用户平均每句话停顿 3 次。</li>
+<li>最终只有最后一次输入是完整的意图。</li>
+<li>每次投机消耗 50 tokens。</li>
+<li>最终完整执行消耗 500 tokens。
+求：该策略下的 Token 浪费率（Waste Rate = 浪费的 Token / 总消耗 Token）。</li>
+</ul>
+<blockquote>
+<p><strong>Hint</strong>：计算浪费的次数和总消耗。</p>
+</blockquote>
+<details>
+<summary>参考答案</summary>
+<ul>
+<li>用户每句话触发投机次数：3 次。</li>
+<li>有效执行：1 次（最后一次）。</li>
+<li>无效投机（浪费）：2 次。</li>
+<li>浪费 Token：2 * 50 = 100 tokens。</li>
+<li>有效 Token：1 * 50（最后一次投机） + 500（完整执行）= 550 tokens。（注：如果最后一次投机能复用则不算浪费，这里假设投机是为了预热或预取，若未被利用则视为浪费，题目简化处理）。</li>
+<li>若假设前两次投机完全丢弃，最后一次投机是正确路径的一部分：<ul>
+<li>总消耗 = 3 * 50 + 500 = 650 tokens。</li>
+<li>浪费 = 2 * 50 = 100 tokens。</li>
+<li>Waste Rate = 100 / 650 ≈ 15.4%。</li>
+</ul>
+</li>
+</ul>
+</details>
+<ol start="3">
+<li><strong>回放测试的设计</strong>
+你记录了一段日志：<code>[T=0s, User: "Open file"], [T=1s, User: "Cancel"], [T=1.5s, Tool: "File Opened"]</code>。
+在 FRP 回放测试中，你应该断言（Assert）系统在 <code>T=1.6s</code> 时的状态是什么？</li>
+</ol>
+<blockquote>
+<p><strong>Hint</strong>：考虑 FRP 中的 <code>takeUntil</code> 或 <code>switchLatest</code> 逻辑以及副作用的处理。</p>
+</blockquote>
+<details>
+<summary>参考答案</summary>
+<ul>
+<li><strong>断言</strong>：Agent 应该处于“空闲”或“已取消”状态，且 UI <strong>不应该</strong>显示“File Opened”的结果（或者显示后立即撤回/灰）。</li>
+<li><strong>原因</strong>：用户在 T=1s 发出了 Cancel 指令。FRP 的流处理应该在 T=1s 时切断了 Tool 的下游监听（Subscriber）。虽然 T=1.5s 工具返回了结果（因为网络请求已发出），但在 Runtime 层面，该结果应被丢弃或忽略，不应触发后续的业务逻辑或 UI 更新。</li>
+</ul>
+</details>
+<hr />
+<h3 id="_2">挑战题</h3>
+<ol start="4">
+<li><strong>评测“打断”的平滑度</strong>
+设计一个自动化测试方案，用于量化评测 Agent 处理“打断（Interruption）”的性能。你需要测量哪个具体的时差？如何用脚本模拟？</li>
+</ol>
+<blockquote>
+<p><strong>Hint</strong>：涉及三个时间点：打断发生、音频停止、新音频开始。</p>
+</blockquote>
+<details>
+<summary>参考答案</summary>
+<p><strong>方案设计</strong>：</p>
+<ol>
+<li><strong>模拟场景</strong>：Agent 正在播放一段长语音（比如天气预报）。</li>
+<li><strong>触发动作</strong>：在播放到第 2 秒时，脚本注入一个新的 User Audio Event（模拟用户插话）。</li>
+<li><strong>测量指标</strong>：<ul>
+<li><strong>T_stop</strong>：从注入打断事件 到 Agent 输出 <code>AudioStop</code> 指令（停止播放）的时间差。越短越好。</li>
+<li><strong>T_response</strong>：从注入打断事件 到 Agent 输出针对新话题的第一个 Token 的时间差。</li>
+<li><strong>Overlap Duration</strong>：旧音频和用户新语音重叠的时长。</li>
+</ul>
+</li>
+<li><strong>自动化实现</strong>：使用虚拟时钟。Agent 认为自己在播放音频，收到打断信号后，检查 Event Log 中 <code>StopSignal</code> 的时间戳。如果 <code>T_stop &gt; 200ms</code>，则测试不通过（感觉迟钝）。</li>
+</ol>
+</details>
+<ol start="5">
+<li><strong>幻觉与引用一致性检测</strong>
+Agent 使用了 RAG 技术。如何编写一个自动化的 "Model-based Evaluator" 来检测回答中的幻觉？</li>
+</ol>
+<blockquote>
+<p><strong>Hint</strong>：输入是（Query, Retrieved Docs, Agent Answer）。利用另一个强大的 LLM（Judge Model）。</p>
+</blockquote>
+<details>
+<summary>参考答案</summary>
+<p><strong>流程</strong>：</p>
+<ol>
+<li><strong>准备数据</strong>：从日志中提取三元组 <code>{Query, Retrieved_Chunks[], Agent_Response}</code>。</li>
+<li>
+<p><strong>构建 Judge Prompt</strong>：
+    "你是一个公正的法官。请检查 Agent_Response 中的每一句话。
+    如果这句话包含事实性陈述，请验证该陈述是否被 Retrieved_Chunks 中的内容所支持。
+    输出格式 JSON：{ 'sentence': '...', 'supported': true/false, 'citation_id': '...' }"</p>
+</li>
+<li>
+<p><strong>计算指标</strong>：</p>
+<ul>
+<li><strong>Faithfulness Score</strong>：支持的句子数 / 总事实句数。</li>
+<li><strong>Citation Accuracy</strong>：标注的引用 ID 是否真正包含了对应信息。</li>
+</ul>
+</li>
+<li><strong>报警</strong>：如果 Faithfulness Score &lt; 95%，则标记该会话为“潜在幻觉”，人工复核。</li>
+</ol>
+</details>
+<ol start="6">
+<li><strong>动态 Batching 的 ROI 分析</strong>
+你为了提高吞吐量，实现了一个 <code>debounce(50ms)</code> 的动态 Batching 策略来合并 Embedding 请求。
+这虽然节省了 API 调用次数，但也增加了 50ms 的延迟。
+请设计一个公式来决定是否应该开启这个策略。</li>
+</ol>
+<blockquote>
+<p><strong>Hint</strong>：不仅看钱，还要看延迟对留存率的影响（假设已知）。</p>
+</blockquote>
+<details>
+<summary>参考答案</summary>
+<p><strong>决策公式</strong>：
+Score = (Cost_Savings * Weight_Cost) - (Latency_Increase * Weight_User_Churn)</p>
+<p>其中：</p>
+<ul>
+<li><strong>Cost_Savings</strong>：由于 Batching 减少的请求次数带来的 API 费用节省（或 GPU 推理效率提升折算的金额）。</li>
+<li><strong>Latency_Increase</strong>：平均增加的延迟（这里是 0~50ms 的期望值，约 25ms）。</li>
+<li><strong>Weight_User_Churn</strong>：每增加 1ms 延迟导致的用户流失带来的预期损失（LTV 损失）。</li>
+</ul>
+<p><strong>Rule of Thumb</strong>：</p>
+<ul>
+<li>如果是<strong>面向用户的高频交互</strong>（如实时语音），50ms 延迟感知很强，通常<strong>不开启</strong> Batching 或使用极小的窗口（5-10ms）。</li>
+<li>如果是<strong>后台异步任务</strong>（如生成摘要、存入记忆），延迟不敏感，<strong>开启</strong> Batching 并设置更大的窗口（200ms+）以最大化吞吐。</li>
+</ul>
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<h3 id="1-heisenberg">1. "Heisenberg" 观测效应</h3>
+<ul>
+<li><strong>误区</strong>：为了评测性能，在每个 FRP 算子（Operator）中加了详细的 <code>console.log</code> 或同步的磁盘写入。</li>
+<li><strong>后果</strong>：日志记录本身阻塞了事件流，导致测出来的延迟比实际高，甚至改变了竞争条件（Race Condition）的结果。</li>
+<li><strong>对策</strong>：使用异步的、采样率可控的 Trace 系统；或者在生产环境仅记录二进制的 Event Stream，离线再解析。</li>
+</ul>
+<h3 id="2-golden-set">2. 过度拟合 "Golden Set"</h3>
+<ul>
+<li><strong>误区</strong>：一旦测试通过，就认为万事大吉。但 RAG 的数据库每天都在更新，LLM 的版本也在微调。</li>
+<li><strong>后果</strong>：三个月前的“标准答案”现在可能是错的（例如：你可以问“现在的美国总统是谁”）。</li>
+<li><strong>对策</strong>：Golden Set 必须有<strong>生命周期管理</strong>。对于时效性问题，测试用例应当是动态的（Dynamic Assertions），或者定期废弃旧用例。</li>
+</ul>
+<h3 id="3_1">3. 忽略了 "长尾" 状态</h3>
+<ul>
+<li><strong>误区</strong>：评测时总是从“全新会话”开始测试。</li>
+<li><strong>后果</strong>：忽略了长时间运行后 Context Window 爆满、内存泄漏、或者状态机处于怪异中间态（比如工具调用了一半挂起）的情况。</li>
+<li><strong>对策</strong>：进行 Soak Testing（浸泡测试），即在回放测试中，连续拼接 100 个会话的历史，测试 Agent 在第 101 个会话时的表现（是否还能记住？是否变慢？）。</li>
+</ul>
+<h3 id="4_1">4. 盲目追求低延迟</h3>
+<ul>
+<li><strong>误区</strong>：为了极致的 TTFT，不仅使用了流式输出，还使用了非常激进的 Speculative Decoding。</li>
+<li><strong>后果</strong>：用户经常看到 Agent 输出了半句话，然后突然撤回重写（因为投机失败）。这种“闪烁”的体验比稍微慢一点但稳定的体验更糟糕。</li>
+<li><strong>对策</strong>：引入 "Stability" 指标。在 UI 层设置一个极短的 Buffer（如 20ms），或者惩罚撤回操作的评测分数。</li>
+</ul>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter15.html" class="nav-link prev">← Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</a><a href="chapter17.html" class="nav-link next">Chapter 17｜参考实现：一个端到端的 FRP Agent →</a></nav>
+        </main>
+    </div>
+</body>
+</html>
