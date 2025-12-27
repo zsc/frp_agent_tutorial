@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>Appendix D｜部署与运维：配置、灰度、告警与容灾</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/highlight.css">
+    <script src="assets/script.js" defer></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: false,
+                packages: {'[+]': ['noerrors', 'ams']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            loader: {
+                load: ['[tex]/noerrors', '[tex]/ams']
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="搜索..." autocomplete="off">
+            </div>
+            <div id="tree-container">
+                <nav class="tree-nav" role="tree">
+                    <div class="tree-item " >
+                        <a href="index.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">《用 FRP（Functional Reactive Programming）搭建 LLM 实时 Agent：从抽象到落地》</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter1.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 1｜问题空间与总体架构：为什么用 FRP</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter2.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 2｜FRP 基础：用事件流描述 Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter3.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 3｜核心运行时：Agent 作为“可组合的反应系统”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter4.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 4｜Prompt Management：内嵌环境状态播报 + 时间变化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter5.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 5｜用户异步动作：打断、撤回、改口、多模态输入</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter6.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 6｜工具 / API 调用：失效处理、回退、幂等与隔离</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter7.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 7｜RAG / DB / Python toolcall：把知识管道变成事件流</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter8.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 8｜Speculative Exec & Speculative Decoding：让系统“更快也更稳”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter9.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 9｜Dynamic Batching & 并发：吞吐、延迟与公平性</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter10.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">[Chapter 10｜事件触发器：做一个“类似 VAD”的 Agent Trigger System](chapter10.md)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter11.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 11｜Race Condition 与一致性：并发世界的“真相维护”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter12.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 12｜Token Budget 控制：预算就是产品体验</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter13.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 13｜日志持久化与可观测性：Tracing/Replay/Metric 一体化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter14.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 14｜人类直观 UI（含音效）与后台 Debug 可视化</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter15.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 15｜安全、隐私与治理：让 Agent 可上线、可合规</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter16.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 16｜评测与持续迭代：从“能用”到“好用”</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter17.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Chapter 17｜参考实现：一个端到端的 FRP Agent</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter18.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix A｜术语表 & FRP 算子速查 (The Agent Developer's Rosetta Stone)</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter19.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix B｜数据结构与协议：Event/State/Receipt/Trace Schema</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="chapter20.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix C｜测试方法：虚时间、回放与混沌工程</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item active" >
+                        <a href="chapter21.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Appendix D｜部署与运维：配置、灰度、告警与容灾</span>
+                        </a>
+                    </div>
+                
+                    <div class="tree-item " >
+                        <a href="CLAUDE.html" class="tree-link">
+                            <span class="tree-icon">📄</span>
+                            <span class="tree-title">Untitled</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </nav>
+        
+        <main class="content">
+            <article>
+                <h1 id="appendix-d">Appendix D｜部署与运维：配置、灰度、告警与容灾</h1>
+<h2 id="1">1. 开篇段落</h2>
+<p>欢迎来到本书的“深水区”。在前文中，我们讨论了如何编写代码；而在本章，我们将讨论如何<strong>运行</strong>代码。</p>
+<p>对于传统的无状态 RESTful 服务，运维通常意味着“CI/CD 管道”、“Kubernetes HPA”和“ELK 日志”。但对于一个<strong>基于长连接（WebSocket/WebRTC）、状态敏感、极其依赖不稳定外部 API（LLM）、且每一毫秒都在烧钱</strong>的 FRP Agent 系统，运维面临着全新的挑战：</p>
+<ol>
+<li><strong>配置即信号（Configuration as Signal）</strong>：你不能每次调整 Prompt 或 Temperature 都重启服务，这会切用户的语音通话。配置必须是实时流动的。</li>
+<li><strong>版本矩阵爆炸</strong>：Agent 的行为由“代码版本 + 模型版本 + Prompt 版本 + RAG 知识库版本”共同决定。灰度发布不仅仅是切流量，更是切“上下文”。</li>
+<li><strong>可观测性盲区</strong>：CPU 和内存正常，并不代表 Agent 正常。它可能正在疯狂输出乱码（幻觉）或者陷入“你好-你好-你好”的死循环（Looping），这需要基于流的语义监控。</li>
+<li><strong>成本熔断</strong>：如果代码写了个 Bug 导致死循环，传统的服务只是卡死，LLM Agent 则会让你在一夜之间破产。</li>
+</ol>
+<p>本章将提供一套完整的“Day 2 Operations”指南，确保你的 Agent 不仅能跑通，还能在生产环境中稳健生存。</p>
+<hr />
+<h2 id="2">2. 核心论述</h2>
+<h3 id="21-configuration-as-signal">2.1 配置即信号 (Configuration as Signal)</h3>
+<p>在 FRP 架构中，<strong>静态配置文件是反模式</strong>。所有的配置（Prompt 模板、LLM 参数、工具开关、RAG 阈值）都应该被视为随时间变化的<strong>Signal信号）</strong>。</p>
+<h4 id="211">2.1.1 配置的层级与合并</h4>
+<p>一个生产级 Agent 的配置通常是多层合并（Merge）的结果：</p>
+<ol>
+<li><strong>Global Signal</strong>：全系统通用的，如 API Key 轮换、全局熔断开关。</li>
+<li><strong>Tenant/Group Signal</strong>：租户级别的，如“VIP 用户使用 GPT-4，普通用户使用 GPT-3.5”。</li>
+<li><strong>Session Signal</strong>：会话级别的，如用户刚才手动开启了“详细模式”。</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="k">[Etcd/Consul] --&gt; [Config Source Stream]</span>
+<span class="w">                        </span><span class="na">|</span>
+<span class="w">                        </span><span class="na">v</span>
+<span class="w">                 </span><span class="na">+---------------+</span>
+<span class="w">                 </span><span class="na">| Global Config | (Base)</span>
+<span class="w">                 </span><span class="na">+---------------+</span>
+<span class="w">                        </span><span class="na">|</span>
+<span class="na">[User Profile DB] -&gt; [Tenant Config] (Override)</span>
+<span class="w">                        </span><span class="na">|</span>
+<span class="na">[UI Toggle Event] -&gt; [Session Config] (Override)</span>
+<span class="w">                        </span><span class="na">|</span>
+<span class="w">                        </span><span class="na">v</span>
+<span class="w">              </span><span class="na">[Merged Config Signal]  &lt;-- 最终业务逻辑订阅此信号</span>
+</code></pre></div>
+
+<h4 id="212">2.1.2 热更新与“配置屏障”</h4>
+<p>当配置在一次对话中间发生变化时，如何处理？</p>
+<ul>
+<li><strong>立即生效</strong>：如下一个 Token 的采样温度。</li>
+<li><strong>下一轮生效</strong>：如 System Prompt 的修改。如果在生成过程中修改 System Prompt，可能导致 LLM 精神分裂。</li>
+</ul>
+<p><strong>FRP 模式：<code>sample</code> 与 <code>withLatestFrom</code></strong>
+我们通常不在流的中间处理配置变化，而是在<strong>事件触发的瞬间</strong>对配置进行采样。</p>
+<div class="codehilite"><pre><span></span><code>// ❌ 错误：在闭包中读取外部变量，可能导致同一句话前半段和后半段逻辑不一致
+process(input) {
+   let cfg = globalConfig; // 不要这样做
+   ...
+}
+
+// ✅ 正确：将配置视为输入流的“伴随数据”
+contextStream = userInputStream.withLatestFrom(configSignal)
+    .map(([input, config]) -&gt; {
+        return createExecutionContext(input, config); // 配置被快照（Snapshot）
+    });
+</code></pre></div>
+
+<h3 id="22-canary-shadowing">2.2 复杂的灰度发布 (Canary &amp; Shadowing)</h3>
+<p>LLM Agent 的灰度不仅是流量的灰度，更是<strong>状态的灰度</strong>。</p>
+<h4 id="221-connection-draining">2.2.1 连接耗尽 (Connection Draining)</h4>
+<p>你不能直接杀掉旧版本的 Pod。</p>
+<ol>
+<li><strong>标记下线</strong>：将 v1 Pod 标记为 <code>Draining</code>。负载均衡器停止分发新连接。</li>
+<li><strong>软性超时</strong>：对于超过 1 小时的长连接，发送“系统维护，请刷新”的 UI 事件，诱导用户重连。</li>
+<li><strong>硬性强制</strong>：设置 4-12 小时的宽限期，之后强制断开。</li>
+</ol>
+<h4 id="222-shadow-traffic-dark-launching">2.2.2 影子流量 (Shadow Traffic / Dark Launching)</h4>
+<p>如何测试一个新的 Prompt 是否会让 RAG 检索效果变差？直接上线风险太大。FRP 的<strong>多播（Multicast）</strong>特性是实现影子流量的神器。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="w"> </span><span class="n">Input</span><span class="w"> </span><span class="n">Stream</span>
+<span class="w">      </span><span class="o">|</span>
+<span class="w">      </span><span class="o">+-------+</span><span class="w"> </span><span class="p">(</span><span class="n">share</span><span class="o">/</span><span class="n">multicast</span><span class="p">)</span>
+<span class="w">      </span><span class="o">|</span><span class="w">       </span><span class="o">|</span>
+<span class="w">      </span><span class="n">v</span><span class="w">       </span><span class="n">v</span>
+<span class="w"> </span><span class="p">[</span><span class="n">Prod</span><span class="w"> </span><span class="n">Flow</span><span class="p">]</span><span class="w"> </span><span class="p">[</span><span class="n">Shadow</span><span class="w"> </span><span class="n">Flow</span><span class="w"> </span><span class="p">(</span><span class="n">v2</span><span class="w"> </span><span class="n">Prompt</span><span class="p">)]</span>
+<span class="w">      </span><span class="o">|</span><span class="w">       </span><span class="o">|</span>
+<span class="w">      </span><span class="o">|</span><span class="w">       </span><span class="o">+--&gt;</span><span class="w"> </span><span class="p">[</span><span class="n">LLM</span><span class="w"> </span><span class="p">(</span><span class="n">Dry</span><span class="w"> </span><span class="n">Run</span><span class="p">)]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="p">[</span><span class="n">Evaluator</span><span class="p">]</span>
+
+<span class="w">      </span><span class="o">|</span><span class="w">       </span><span class="o">+--&gt;</span><span class="w"> </span><span class="p">[</span><span class="n">LLM</span><span class="w"> </span><span class="p">(</span><span class="n">Dry</span><span class="w"> </span><span class="n">Run</span><span class="p">)]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="p">[</span><span class="n">Evaluator</span><span class="p">]</span>
+<span class="w">      </span><span class="o">|</span><span class="w">                                   </span><span class="o">|</span>
+
+<span class="w">      </span><span class="n">v</span><span class="w">                                   </span><span class="n">v</span>
+<span class="w"> </span><span class="p">[</span><span class="n">User</span><span class="w"> </span><span class="n">Output</span><span class="p">]</span><span class="w">                     </span><span class="p">[</span><span class="n">Log</span><span class="w"> </span><span class="n">Difference</span><span class="p">]</span>
+<span class="w">                               </span><span class="p">(</span><span class="n">Latency</span><span class="p">,</span><span class="w"> </span><span class="n">Token</span><span class="w"> </span><span class="n">Count</span><span class="p">,</span><span class="w"> </span><span class="n">Embedding</span><span class="w"> </span><span class="n">Distance</span><span class="p">)</span>
+</code></pre></div>
+
+<p><em>注意：影子流量会消耗双倍的 Token 成本，通常只对 1% - 5% 的流量开启。</em></p>
+<h4 id="223-the-version-matrix">2.2.3 版本矩阵 (The Version Matrix)</h4>
+<p>由于 Agent 依赖多个组件，发布时必须记录完整的版本指纹：
+<code>BuildID = { Code: v1.2, Prompt: v3.5, Model: gpt-4-0613, KB_Index: 2024-01-05 }</code>
+在排查“为什么昨天好用的 Agent 今天变傻了”时，这个指纹至关重要。</p>
+<h3 id="23-slo">2.3 告警与 SLO：关注“流的健康”</h3>
+<p>监控传统的 QPS 和 Latency 不足以描述 Agent 的健康状况。我们需要监控<strong>流的物理特性</strong>和<strong>语义特性</strong>。</p>
+<h4 id="231">2.3.1 物理层监控（基于时间与背压）</h4>
+<ul>
+<li><strong>TTFT (Time To First Token)</strong>：首字延迟。这是用户感知的最重要指标。<ul>
+<li><em>SLO</em>: 95% 请求 TTFT &lt; 1.5s。</li>
+</ul>
+</li>
+<li><strong>Stream Stalls (流停顿)</strong>：在生成过程中，两个 Token 之间的间隔超过阈值（如 5s）。这通常意味着 LLM 推理卡顿或网络抖动。</li>
+<li><strong>Backpressure Drop Rate</strong>：由于系统处理不过来（如入库、UI 渲染），而在 buffer 中被丢弃的事件量。</li>
+</ul>
+<h4 id="232">2.3.2 语义层监控（基于内容）</h4>
+<ul>
+<li><strong>Loop Detection (死循环检测)</strong>：检测输出流中 n-gram 的重复率。如果 Agent 开始复读机，必须触发告警并熔断。</li>
+<li><strong>Tool Error Burst</strong>：如果工具调用连续失败率超过 20%，说明外部依赖挂了。</li>
+<li><strong>Safety Filter Rate</strong>：内容安全拦截率突增，可能意味着正在遭受注入攻击。</li>
+</ul>
+<h4 id="233-wallet-protection">2.3.3 成本层监控（Wallet Protection）</h4>
+<ul>
+<li><strong>Token Burn Velocity</strong>：每分钟消耗的 Token 总量。</li>
+<li><em>告警</em>：如果 <code>CurrentVelocity &gt; 3 * MovingAverage(1h)</code>，立即触发 <strong>Cost Circuit Breaker</strong>，暂停非 VIP 服务或降级到廉价模型。</li>
+</ul>
+<h3 id="24-disaster-recovery">2.4 容灾与降级策略 (Disaster Recovery)</h3>
+<p>当 OpenAI 挂了，或者私有模型显存爆了，Agent 必须“优雅地变笨”，而不是“直接死亡”。</p>
+<h4 id="241-multi-level-fallback">2.4.1 多级回退 (Multi-Level Fallback)</h4>
+<p>利用 FRP 的 <code>catchError</code> 和 <code>switch</code> 实现无缝降级。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[Plan A: GPT-4] --(Error/Timeout)--&gt; [Plan B: GPT-3.5] --(Error)--&gt; [Plan C: Rule-Based]</span>
+<span class="w">      </span><span class="na">|                                   |                             |</span>
+<span class="w">  </span><span class="na">(Best Quality)                    (Lower Quality)              (&quot;Sorry I can&#39;t help&quot;)</span>
+</code></pre></div>
+
+<h4 id="242-circuit-breaker">2.4.2 熔断器 (Circuit Breaker)</h4>
+<p>FRP 中的熔断器不仅仅是一个开关，它是一个<strong>状态机转换器</strong>。</p>
+<ul>
+<li><strong>Closed</strong>: 正常流转。</li>
+<li><strong>Open</strong>: 遇到错误阈值，流被切断，直接返回 <code>ErrorEvent</code>。</li>
+<li><strong>Half-Open</strong>: 定时器触发（如 60s 后），允许 1 个测试事件通过。如果成功，转为 Closed；失败则回到 Open。</li>
+</ul>
+<h4 id="243-state-hydration">2.4.3 状态恢复 (State Hydration)</h4>
+<p>如果运行 Agent 的容器崩溃（OOM），K8s 会重启它。新的 Pod 必须能接管旧的 WebSocket 连接（如果是 Sticky Session）或让用户重连后无感。</p>
+<ul>
+<li><strong>Redis as Hot Store</strong>: 每处理完一个 Event，State 的增量变化（Delta）必须异步写入 Redis。</li>
+<li><strong>Replay</strong>: 新 Pod 启动时，从 Redis 加载最近的 Checkpoint，并重放此后的 Event Log将内存中的 FRP 状态机恢复到崩溃前的那一刻。</li>
+</ul>
+<hr />
+<h2 id="3">3. 本章小结</h2>
+<ul>
+<li><strong>配置是流</strong>：利用 FRP 的组合算子（<code>combineLatest</code>, <code>withLatestFrom</code>）将配置注入到业务流中，杜绝全局变量，实现线程安全的热更新。</li>
+<li><strong>部署需耐心</strong>：长连接应用必须处理 Connection Draining，利用影子流量（Shadowing）进行无损的 Prompt 测试。</li>
+<li><strong>监控需深入</strong>：除了 CPU/Latency，更要关注 TTFT、流停顿、死循环率和 Token 燃烧速度。</li>
+<li><strong>活着最重要</strong>：设计多级降级策略（Fallback Stream），在依赖崩溃时保持最低限度的服务能力。</li>
+</ul>
+<hr />
+<h2 id="4">4. 练习题</h2>
+<h3 id="_1">基础题</h3>
+<ol>
+<li><strong>配置热更新的算子选择</strong>
+你需要实现这样一个逻辑：每当用户说话时，使用当前时刻配置中心指定的 <code>SystemPrompt</code>。如果配置中心在 LLM 生成过程中更新了 Prompt，<strong>不影响</strong>当前正在生成的这句话，只影响下一句话。请选择合适的 FRP 模式并解释。</li>
+</ol>
+<details>
+<summary>点击查看提示与答案</summary>
+<ul>
+<li><strong>提示</strong>：比较 <code>combineLatest</code> 和 <code>withLatestFrom</code> 的区别。思考谁是“主驱动力”。</li>
+<li>
+<p><strong>参考答案</strong>：
+    应使用 <code>userInputStream.withLatestFrom(configStream)</code>。</p>
+<ul>
+<li><strong>原因</strong>：<code>combineLatest</code> 会在 <code>configStream</code> 更新时<strong>立即</strong>触发下游（导致如果配置变了，Agent 可能会突然重新说话，这是不符合预期的）。而 <code>withLatestFrom</code> 只有在 <code>userInputStream</code> 发出事件（用户说话）时，才去“拉取”最新的配置。这完美符合“只影响下一句话”的需求。</li>
+</ul>
+</li>
+</ul>
+</details>
+<ol start="2">
+<li><strong>简易死循环检测器</strong>
+LLM 有时会陷入“I am, I am, I am...”的循环。设计一个简单的 FRP 流逻辑，实时检测输出流，如果最近 5 个 Token 完全相同，则抛出 <code>LoopDetectedError</code>。</li>
+</ol>
+<details>
+<summary>点击查看提示与答案</summary>
+<ul>
+<li><strong>提示</strong>：使用 <code>buffer</code> 或 <code>scan</code> 保存最近的状态。</li>
+<li><strong>参考答案</strong>：</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>tokenStream
+  .scan((history, newToken) -&gt; {
+      // 只保留最近 5 个
+      let newHistory = [...history, newToken].slice(-5);
+      return newHistory;
+  }, [])
+  .map(history -&gt; {
+      if (history.length &lt; 5) return &quot;ok&quot;;
+      if (history.every(t -&gt; t === history[0])) throw new LoopDetectedError();
+      return &quot;ok&quot;;
+  })
+</code></pre></div>
+
+</details>
+<ol start="3">
+<li><strong>TTFT 监控埋点</strong>
+在一个从 <code>UserEvent</code> 到 <code>TokenStream</code> 的处理链中，应该在哪里记录时间戳来计算 Time To First Token？</li>
+</ol>
+<details>
+<summary>点击查看提示与答案</summary>
+<ul>
+<li><strong>提示</strong>：你需要两个时间点：用户输入结束时，和 LLM 输出第一个 token 时。</li>
+<li><strong>参考答案</strong>：<ol>
+<li><strong>T0</strong>: 在 <code>UserInputStream</code> 收到完整请求时，通过 <code>map</code> 操作符给事件打上 <code>startTime = Date.now()</code>。</li>
+<li><strong>T1</strong>: 在 LLM Response 流的<strong>第一个</strong>事件到达时（可以使用 <code>take(1)</code> 或者在 scan 中检测 index=0）。</li>
+<li><strong>计算</strong>: <code>TTFT = T1 - T0</code>将此指标推送到监控流 <code>MetricStream</code>。</li>
+</ol>
+</li>
+</ul>
+</details>
+<h3 id="_2">挑战题</h3>
+<ol start="4">
+<li><strong>成本熔断器 (Cost Circuit Breaker) 实现</strong>
+设计一个全系统级别的保护机制：限制每分钟全系统最多消耗 1,000,000 Tokens。如果超过，<strong>所有</strong>新的非 VIP 用户请求直接被拒绝（返回“系统繁忙”），直到下一分钟窗口开始。要求考虑分布式环境（多个 Pod）。</li>
+</ol>
+<details>
+<summary>点击查看提示与答案</summary>
+<ul>
+<li><strong>提示</strong>：单机内存无法统计全局量。需要借助 Redis + Lua 脚本或滑动窗口算法。在 FRP 中，这应该是一个异步的 <code>Gate</code>。</li>
+<li><strong>参考答案</strong>：<ol>
+<li><strong>全局计数器</strong>: 使用 Redis 的 <code>INCR</code> 和 <code>EXPIRE</code> 实现分钟级计数器。</li>
+<li><strong>Token 预估流</strong>: 在调用 LLM 前，先根据 Prompt 长度估算 Token 消耗（Input Token），或者在流结束后上报实际消耗。</li>
+<li><strong>准入控制 (Admission Control)</strong>:
+    构建一个 <code>GlobalBudgetSignal</code>，它每秒从 Redis 拉取（订阅）当前消耗量。</li>
+</ol>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>requestStream
+  .withLatestFrom(globalBudgetSignal)
+  .filter(([req, usage]) -&gt; {
+      if (req.user.isVip) return true;
+      return usage &lt; 1000000;
+  })
+  .else(emit(&quot;System Busy&quot;))
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="k">*</span>   <span class="gs">*进阶*</span>：为了减少 Redis 压力，可以在 Pod 本地做预聚合（Batch Update），每 5 秒同步一次，但这会牺牲一定的精确度。
+</code></pre></div>
+
+</details>
+<ol start="5">
+<li><strong>智能回退策略 (Smart Fallback)</strong>
+设计一个流，首先尝试调用 <code>Tool A</code> (高精度但慢)，如果 <code>Tool A</code> 在 2 秒内没反应，<strong>不取消</strong> <code>Tool A</code>（因为它可能马上就好），而是并发启动 <code>Tool B</code> (低精度但快)。最终取最先返回的那个有效结果。</li>
+</ol>
+<details>
+<summary>点击查看提示与答案</summary>
+<ul>
+<li><strong>提示</strong>：这是 <code>amb</code> (race) 算子和 <code>delay</code> 的组合应用。</li>
+<li><strong>参考答案</strong>：
+    这是“Hedging Request”（对冲请求）模式。</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>streamA = callToolA();
+streamB = callToolB().delay(2000); // 延迟 2 秒启动 B
+
+// amb (ambiguous) 算子会取两个流中最早发出数据的那个
+resultStream = amb(streamA, streamB).take(1);
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="o">*</span><span class="n">解释</span><span class="o">*</span><span class="n">：</span>
+
+<span class="mf">1.</span><span class="w"> </span><span class="n">0s</span><span class="o">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">开始。</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">0s</span><span class="o">-</span><span class="n">2s</span><span class="o">:</span><span class="w"> </span><span class="n">如果</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">返回，</span><span class="n n-Quoted">`amb`</span><span class="w"> </span><span class="n">选中</span><span class="w"> </span><span class="n">A，B</span><span class="w"> </span><span class="n">还没启动就被取消了（因为</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">有</span><span class="w"> </span><span class="n">delay）。</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">2s</span><span class="o">:</span><span class="w"> </span><span class="n">如果</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">还没回，B</span><span class="w"> </span><span class="n">启动。</span>
+<span class="mf">4.</span><span class="w"> </span><span class="n">2s</span><span class="o">+:</span><span class="w"> </span><span class="n">现在</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">和</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">都在跑。谁先回，</span><span class="n n-Quoted">`amb`</span><span class="w"> </span><span class="n">就选谁，并自动取消另一个（unsubscribe）。</span>
+</code></pre></div>
+
+</details>
+<ol start="6">
+<li><strong>混沌工程：模拟网络抖动</strong>
+在测试环境中，如何利用 FRP 的特性，不修改业务代码，强行让所有 LLM 的回复都增加 500ms - 3000ms 的随机延迟，并有 10% 的概率直接抛出“网络错误”，以验证前端 UI 的健壮性？</li>
+</ol>
+<details>
+<summary>点击查看提示与答案</summary>
+<ul>
+<li><strong>提示</strong>：在 Effect 执行层注入一个“中间件”算子。</li>
+<li><strong>参考答案</strong>：
+    在开发/测试配置中，通过依赖注入替换 <code>LLMService</code> 的实现，或者在流的管道中插入一个 <code>ChaosOperator</code>：</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>llmStream
+  .flatMap(event -&gt; {
+     // 1. 随机错误注入
+     if (Math.random() &lt; 0.1) return throwError(new NetworkError());
+
+     // 2. 随机延迟注入
+     let delayTime = 500 + Math.random() * 2500;
+     return of(event).delay(delayTime);
+  })
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">这个</span><span class="w"> </span><span class="n">Operator</span><span class="w"> </span><span class="n">可以由一个全局的</span><span class="w"> </span><span class="n n-Quoted">`ChaosConfigSignal`</span><span class="w"> </span><span class="n">控制，随时开关。</span>
+</code></pre></div>
+
+</details>
+<hr />
+<h2 id="5-gotchas">5. 常见陷阱与错误 (Gotchas)</h2>
+<ol>
+<li>
+<p><strong>配置更新导致的状态不一致</strong></p>
+<ul>
+<li><em>现象</em>：在一次长对话中，中途更新了 <code>MaxToken</code> 限制，导致 <code>Buffer</code> 算子的窗口逻辑错乱。</li>
+<li><em>调试</em>：永远不要直接修改正在运行的 Operator 的参数。Operator 初始化时的参数通常是闭包固定的。如果需要动态调整 Operator 的行为（如动态窗口大小），需要使用支持 Signal 参数的高级 Operator，或者使用 <code>switchMap</code> 重建流。</li>
+</ul>
+</li>
+<li>
+<p><strong>"僵尸"流与存泄漏</strong></p>
+<ul>
+<li><em>现象</em>：运维监控显示 Pod 内存随时间线性增长，即便用户量稳定。</li>
+<li><em>原因</em>：在 WebSocket 断开连接时，没有正确 dispose 所有的 Subscription。特别是在处理 <code>retry</code> 或 <code>timeout</code> 时产生的临时流。</li>
+<li><em>Rule of Thumb</em>：每一个 <code>subscribe()</code> 调用，都必须有一个对应的 <code>takeUntil(destroySignal)</code> 或显式的 <code>unsubscribe()</code>。</li>
+</ul>
+</li>
+<li>
+<p><strong>过度降级 (Degradation Loop)</strong></p>
+<ul>
+<li><em>现象</em>：主模型响应稍微慢了一点（比如 1.1s），立刻触发了降级到备用模型。备用模型瞬间被打爆，导致全站瘫痪。</li>
+<li><em>对策</em>：Fallback 策略应该有“抖动（Jitter）”和“冷却（Cooldown）”。不要因为一次超时就判定服务不可用。应结合滑动窗口错误率来决策。</li>
+</ul>
+</li>
+<li>
+<p><strong>日志记录了敏感信息 (PII Leak)</strong></p>
+<ul>
+<li><em>现象</em>：在 Debug 模式下，为了方便，把整个 Event 对象（包含用户 Prompt 和 PII）打印到了 ELK/Datadog，违反 GDPR。</li>
+<li><em>对策</em>：实现一个 <code>LogSanitizer</code> 操作符。在流的末端记录日志前，自动正则替换掉 Email、Phone、API Key 等敏感字段。</li>
+</ul>
+</li>
+<li>
+<p><strong>忽视了取消信号的传递</strong></p>
+<ul>
+<li><em>现象</em>：用户在前端点了“停止生成”，UI 停了，但后端的 Agent 还在傻傻地跑 Python 代码、查数据库、调 LLM，浪费大量资源。</li>
+<li><em>对策</em>：FRP 的核心优势就是 Cancellation Propagation。确保你的 HTTP/RPC 客户端支持 <code>AbortController</code> 或 <code>CancelToken</code>，并在流被 unsubscribe 时触发它。</li>
+</ul>
+</li>
+</ol>
+            </article>
+            
+            <nav class="page-nav"><a href="chapter20.html" class="nav-link prev">← Appendix C｜测试方法：虚时间、回放与混沌工程</a><a href="CLAUDE.html" class="nav-link next">Untitled →</a></nav>
+        </main>
+    </div>
+</body>
+</html>
