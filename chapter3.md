@@ -66,7 +66,7 @@ Runtime 内部处理的事件远不止“用户输入”和“模型输出”。
     *   `ToolReceiptEvent`: 工具执行完成的回执（含结果或错误栈）。
     *   `BudgetAlarmEvent`: Token 预算耗尽告警。
 
-4.  **成流 (Synthetic Stream)**:
+4.  **合成流(Synthetic Stream)**:
     *   `VADTriggerEvent`: 语音活动检测触发（用户开始说话/停止说话）。
     *   `SilenceTimeoutEvent`: 用户沉默超时（Bot 主动搭话）。
 
