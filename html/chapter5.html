@@ -325,7 +325,7 @@ Derived Execution Stream (switchMap):
 </ol>
 <h4 id="barge-in">抢话（Barge-in）</h4>
 <p>当 Agent 正在 TTS 播报回复时，VAD 检测到用户说话（User Voice Start）。
-此时必须立即触 <code>AudioInterrupt</code> 事件：</p>
+此时必须立即触发 <code>AudioInterrupt</code> 事件：</p>
 <ol>
 <li><strong>静音 TTS</strong>：Agent 立即闭嘴。</li>
 <li><strong>清空音频缓冲</strong>：防止播放残留内容。</li>

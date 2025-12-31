@@ -113,7 +113,7 @@ Derived Execution Stream (switchMap):
 
 #### 抢话（Barge-in）
 当 Agent 正在 TTS 播报回复时，VAD 检测到用户说话（User Voice Start）。
-此时必须立即触 `AudioInterrupt` 事件：
+此时必须立即触发 `AudioInterrupt` 事件：
 1.  **静音 TTS**：Agent 立即闭嘴。
 2.  **清空音频缓冲**：防止播放残留内容。
 3.  **监听新指令**：进入“倾听”模式。
