@@ -577,7 +577,7 @@ Agent 决定调用一个耗时工具（如“扫描全盘文件”）。工具�
 </ul>
 <h3 id="55">5.5 "回声"触发死循环</h3>
 <ul>
-<li><strong>现象</strong>：Agent 说的话被自己的麦克风听见，被识别为用户输入，Agent 再次回答，限循环。</li>
+<li><strong>现象</strong>：Agent 说的话被自己的麦克风听见，被识别为用户输入，Agent 再次回答，无限循环。</li>
 <li><strong>原因</strong>：缺少 AEC（回声消除）或软件层的“Agent 说话时屏蔽麦克风输入”。</li>
 <li><strong>Fix</strong>：在 FRP 链路最前端加一个 Gate：<code>micStream.filter(() =&gt; !speaker.isPlaying)</code>。虽然这会导致 Agent 说话时无法被打断（半双工），但比死循环要好。完美的方案需要硬件 AEC 或基于原始音频数据的减法处理。</li>
 </ul>
