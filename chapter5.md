@@ -387,6 +387,6 @@ Reducer 接收到 `SuccessEvent` 更新 UI 样式（半透明）；接收到 `Co
     2. 给所有 buffering 算子加上最大长度限制（如 `buffer(count=100)`）。
 
 ### 5.5 "回声"触发死循环
-*   **现象**：Agent 说的话被自己的麦克风听见，被识别为用户输入，Agent 再次回答，限循环。
+*   **现象**：Agent 说的话被自己的麦克风听见，被识别为用户输入，Agent 再次回答，无限循环。
 *   **原因**：缺少 AEC（回声消除）或软件层的“Agent 说话时屏蔽麦克风输入”。
 *   **Fix**：在 FRP 链路最前端加一个 Gate：`micStream.filter(() => !speaker.isPlaying)`。虽然这会导致 Agent 说话时无法被打断（半双工），但比死循环要好。完美的方案需要硬件 AEC 或基于原始音频数据的减法处理。
